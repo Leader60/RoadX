@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useRoadX } from "@/contexts/roadx-context";
 import { Button } from "./ui";
-import { IconSparkle, IconCheck } from "./icons";
+import { IconSparkle } from "./icons";
 
 export function SubscriptionButton() { return null; }
 export function PaymentButton() { return null; }
@@ -55,13 +55,11 @@ export function AutoSubscriptionModal() {
 
   const piUser = sdk?.state?.user || { username: "guest", uid: "guest_uid" };
 
-  // استدعاء بوابة دفع Pi مع حماية ضد التجمد والانهيار
   const initiatePiPayment = async () => {
     const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
 
-    // إذا كنا في متصفح عادي، أو لم يتم العثور على Pi SDK في غضون لحظات
     if (!globalPi) {
-      console.log("SDK غير متوفر، الانتقال لوضع المحاكاة للتجربة...");
+      console.log("SDK غير متوفر، الانتقال لوضع المحاكاة...");
       setTimeout(async () => {
         await saveSubscriptionToDatabase("MOCK_TX_ID_123456");
       }, 2000);
@@ -79,7 +77,6 @@ export function AutoSubscriptionModal() {
         },
       };
 
-      // تشغيل الدفع مع توفير كافة الـ Callbacks المطلوبة من بروتوكول Pi
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -107,11 +104,10 @@ export function AutoSubscriptionModal() {
             if (response.ok) {
               await saveSubscriptionToDatabase(txid);
             } else {
-              // تجاوز آمن في حال تعليق استجابة السيرفر لضمان إتمام العملية للمستخدم
-              await saveSubscriptionToDatabase(txid || "TX_BACKUP_VAL");
+              await saveSubscriptionToDatabase(txid || "TX_BACKUP");
             }
           } catch (e) {
-            await saveSubscriptionToDatabase(txid || "TX_BACKUP_VAL");
+            await saveSubscriptionToDatabase(txid || "TX_BACKUP");
           }
         },
         onCancel: (paymentId: string) => {
@@ -120,16 +116,14 @@ export function AutoSubscriptionModal() {
           setStep("FORM");
         },
         onError: (error: any, paymentId?: string) => {
-          console.error("خطأ الدفع من تطبيق باي:", error);
-          // حماية لتجنب تجميد الشاشة: إذا حدث خطأ تقني في محفظة باي، يتم العبور وحفظ الحساب مؤقتاً
-          toast?.("حدث استثناء تقني، جاري تفعيل الحساب مؤقتاً...");
-          saveSubscriptionToDatabase("TX_FALLBACK_ERROR");
+          console.error("خطأ الدفع:", error);
+          toast?.("حدث استثناء تقني، جاري التفعيل احتياطياً...");
+          saveSubscriptionToDatabase("TX_FALLBACK");
         }
       });
 
     } catch (err) {
-      console.error("فشل استدعاء دالة الدفع:", err);
-      // انتقال تلقائي آمن عند حدوث أي خطأ برمجي في البيئة التجريبية لـ Pi Browser
+      console.error(err);
       await saveSubscriptionToDatabase("TX_FALLBACK_CATCH");
     }
   };
@@ -143,7 +137,6 @@ export function AutoSubscriptionModal() {
     setIsSubmitting(true);
     setStep("PAYING");
     
-    // تأخير طفيف للتأكد من استقرار الواجهة قبل طلب الدفع
     setTimeout(() => {
       initiatePiPayment();
     }, 500);
@@ -169,10 +162,9 @@ export function AutoSubscriptionModal() {
         body: JSON.stringify(subscriptionData),
       });
     } catch (error) {
-      console.error("فشل إرسال البيانات للسيرفر المضيف:", error);
+      console.error(error);
     }
 
-    // تفعيل حالة الحساب محلياً في كل الأحوال والانتقال لصفحة النجاح والتواريخ فوراً
     sessionStorage.setItem("roadx_user_choice", "premium_active");
     setStep("SUCCESS");
     setIsSubmitting(false);
@@ -197,6 +189,7 @@ export function AutoSubscriptionModal() {
 
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-no-scrollbar">
         
+        {/* المرحلة الأولى: تعبئة البيانات */}
         {step === "FORM" && (
           <form onSubmit={handleFormSubmit} className="space-y-4 text-right animate-in fade-in zoom-in duration-300" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
@@ -272,6 +265,7 @@ export function AutoSubscriptionModal() {
           </form>
         )}
 
+        {/* المرحلة الثانية: معالجة الدفع والانتظار */}
         {step === "PAYING" && (
           <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 animate-in fade-in duration-300">
             <div className="h-12 w-12 rounded-full border-4 border-gold border-t-transparent animate-spin mb-2" />
@@ -282,11 +276,12 @@ export function AutoSubscriptionModal() {
           </div>
         )}
 
+        {/* المرحلة الثالثة: شاشة النجاح والتأكيد بالتواريخ */}
         {step === "SUCCESS" && (
           <div className="space-y-5 text-right animate-in zoom-in-95 duration-300" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-2">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-bounce">
-                <IconCheck size={28} />
+                <span className="text-2xl font-bold">✓</span>
               </span>
               <h3 className="text-xl font-bold text-emerald-400">اكتمل تفعيل الاشتراك بنجاح!</h3>
               <p className="text-xs text-muted-foreground">تم فتح جميع خدمات الموسيقى والأغاني الحصرية في حسابك</p>
