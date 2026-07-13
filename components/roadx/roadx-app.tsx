@@ -14,7 +14,7 @@ import { ContactView } from "./contact-view";
 import { ToastHost, StorageNotice, LoadingScreen } from "./feedback";
 
 function AppInner() {
-  const { ready, prefs, setLastTrack } = useRoadX();
+  const { ready, prefs, setLastTrack, toast } = useRoadX();
   const [tab, setTab] = useState<TabId>("home");
   const [trackId, setTrackId] = useState<string>(prefs.lastTrackId);
 
@@ -23,7 +23,24 @@ function AppInner() {
     if (ready) setTrackId(prefs.lastTrackId);
   }, [ready, prefs.lastTrackId]);
 
+  // دالة فحص وتدقيق الصلاحيات قبل الانتقال لأي قائمة
+  const checkAccess = (targetTab: TabId): boolean => {
+    const userChoice = sessionStorage.getItem("roadx_user_choice");
+    const restrictedTabs: TabId[] = ["music", "songs", "playlists"];
+
+    // إذا كان المستخدم قد اختار التصفح المجاني المحدود ويحاول دخول الصفحات المحظورة
+    if (userChoice === "free_guest" && restrictedTabs.includes(targetTab)) {
+      if (toast) {
+        toast("عذراً! هذه القائمة مخصصة للمشتركين فقط. يرجى الاشتراك للوصول إليها.");
+      }
+      return false; // يمنع الوصول
+    }
+    return true; // يسمح بالوصول
+  };
+
   const openTrack = (id: string) => {
+    if (!checkAccess("music")) return;
+    
     setTrackId(id);
     setLastTrack(id);
     setTab("music");
@@ -31,6 +48,12 @@ function AppInner() {
   };
 
   const navigate = (t: TabId) => {
+    if (!checkAccess(t)) {
+      // إجبار المستخدم على البقاء في الرئيسية في حال لم يملك صلاحية
+      setTab("home");
+      return;
+    }
+    
     setTab(t);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
@@ -51,7 +74,7 @@ function AppInner() {
       <BottomNav tab={tab} onNavigate={navigate} />
       <StorageNotice />
       <ToastHost />
-      {/* استدعاء نافذة الاشتراك التلقائية هنا لتظهر بعد 15 ثانية */}
+      {/* استدعاء نافذة الاشتراك التلقائية */}
       <AutoSubscriptionModal />
     </div>
   );
