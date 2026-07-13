@@ -14,7 +14,6 @@ import {
   IconMail,
   IconMusicNote,
 } from "./icons";
-import { PaymentButton, SubscriptionButton } from "./payment-button";
 
 const TAB_ICONS: Record<TabId, typeof IconHome> = {
   home: IconHome,
@@ -52,8 +51,7 @@ export function AppHeader({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <SubscriptionButton />
-          <PaymentButton />
+          {/* تم إزالة أزرار الدفع والاشتراك من هنا تماماً */}
           <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
             <IconMenu size={24} />
           </IconButton>
