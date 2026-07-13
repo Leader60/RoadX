@@ -144,12 +144,11 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
   const dismissToast = (id: string) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  // Load state once authenticated.
+  // Load state once authenticated or fallback to local memory immediately to bypass loading screen lock.
   useEffect(() => {
-    if (!isAuthenticated) return;
     let cancelled = false;
 
-    const store: StateStore = sdk
+    const store: StateStore = (sdk && isAuthenticated)
       ? {
           get: (key) => sdk.state.get(key) as Promise<{ blob: Record<string, unknown> } | null>,
           set: (key, blob) => sdk.state.set(key, blob),
