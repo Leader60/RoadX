@@ -1,171 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePiAuth } from "@/contexts/pi-auth-context";
-import { PRODUCT_CONFIG } from "@/lib/product-config";
 import { Button } from "./ui";
-import { IconShield, IconSparkle } from "./icons";
+import { IconClose, IconSparkle } from "./icons";
 
-interface PaymentButtonProps {
-  onSuccess?: () => void;
+export function SubscriptionButton() {
+  // هذا المكون تم تفريغه لأننا سنعرض نافذة الاشتراك تلقائياً بعد 15 ثانية
+  return null;
 }
 
-export function PaymentButton({ onSuccess }: PaymentButtonProps) {
-  const { products, sdk } = usePiAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function PaymentButton() {
+  // تم تفريغ زر دفع المدير بناءً على طلبك لإزالته من واجهة المستخدم
+  return null;
+}
 
-  const productId = PRODUCT_CONFIG.PRODUCT_6a53f50a552e08825455dbf5;
-  const product = products?.find((p) => p.id === productId);
+export function AutoSubscriptionModal() {
+  const [isOpen, setIsOpen] = useState(false);
+  const { sdk } = usePiAuth();
 
-  if (!product) {
-    return (
-      <Button disabled variant="outline" className="text-xs">
-        منصة التحكم غير متاحة
-      </Button>
-    );
-  }
+  // مؤقت يفتح النافذة تلقائياً بعد 15 ثانية (15000 ميللي ثانية)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+    }, 15000);
 
-  const amount = product.price_in_pi;
-  const label = `${product.name} (${amount} Pi)`;
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handlePayment = async () => {
-    if (!sdk) {
-      setError("SDK not initialized");
-      return;
-    }
+  if (!isOpen) return null;
 
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await sdk.makePurchase(product.slug);
-
-      if (result.ok) {
-        console.log("[Payment] Purchase successful:", {
-          productId: result.productId,
-          paymentId: result.paymentId,
-          txid: result.txid,
-        });
-        onSuccess?.();
-      } else {
-        setError("الدفع فشل. يرجى المحاولة مرة أخرى.");
-      }
-    } catch (err: any) {
-      const code = err?.code;
-      const message =
-        code === "product_not_found"
-          ? "المنتج غير موجود"
-          : code === "purchase_cancelled"
-            ? "تم إلغاء عملية الشراء"
-            : code === "purchase_error"
-              ? "حدث خطأ في الدفع"
-              : "حدث خطأ غير متوقع";
-      setError(message);
-      console.error("[Payment] Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // جلب اسم المستخدم المتوفر من حساب Pi أو وضع اسم افتراضي
+  const username = sdk?.state?.user?.username || "عضو شبكة Pi";
 
   return (
-    <div className="relative inline-block">
-      <Button
-        onClick={handlePayment}
-        disabled={loading}
-        variant="gold"
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold"
-      >
-        <IconShield size={16} />
-        <span className="rx-clamp-1">{label}</span>
-      </Button>
-      {error && (
-        <div className="absolute top-full right-0 mt-2 rounded-lg bg-red-900/90 px-3 py-2 text-xs text-white whitespace-nowrap shadow-lg">
-          {error}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* خلفية معتمة */}
+      <div 
+        className="absolute inset-0 bg-navy-deep/80 backdrop-blur-sm transition-opacity"
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* نافذة الاشتراك */}
+      <div className="relative w-full max-w-md transform overflow-hidden rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-fade-in">
+        {/* زر الإغلاق */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="absolute top-4 left-4 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="إغلاق"
+        >
+          <IconClose size={20} />
+        </button>
+
+        {/* أيقونة مميزة وعنوان */}
+        <div className="flex flex-col items-center gap-2 text-center mb-6">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep text-gold animate-pulse">
+            <IconSparkle size={24} />
+          </span>
+          <h3 className="text-xl font-bold rx-gold-text">اشتراكك في RoadX Premium</h3>
+          <p className="text-xs text-muted-foreground">
+            استمتع بجميع الميزات الموسيقية الحصرية بدون قيود
+          </p>
         </div>
-      )}
-    </div>
-  );
-}
 
-interface SubscriptionButtonProps {
-  onSuccess?: () => void;
-}
+        {/* تفاصيل وبيانات المشترك */}
+        <div className="space-y-4 text-sm text-foreground">
+          <div className="rounded-xl bg-secondary/40 p-4 border border-border">
+            <div className="flex justify-between border-b border-border/55 pb-2 mb-2">
+              <span className="text-muted-foreground">اسم المشترك:</span>
+              <span className="font-semibold text-gold">@{username}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">قيمة الاشتراك:</span>
+              <span className="font-bold text-gold">0.1 Pi / شهرياً</span>
+            </div>
+          </div>
 
-export function SubscriptionButton({ onSuccess }: SubscriptionButtonProps) {
-  const { products, sdk } = usePiAuth();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const productId = PRODUCT_CONFIG.PRODUCT_6a5400ec093f77b293b37533;
-  const product = products?.find((p) => p.id === productId);
-
-  if (!product) {
-    return (
-      <Button disabled variant="outline" className="text-xs">
-        الاشتراك غير متاح
-      </Button>
-    );
-  }
-
-  const amount = product.price_in_pi;
-  const label = `${product.name} (${amount} Pi)`;
-
-  const handlePayment = async () => {
-    if (!sdk) {
-      setError("SDK not initialized");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await sdk.makePurchase(product.slug);
-
-      if (result.ok) {
-        console.log("[Subscription] Purchase successful:", {
-          productId: result.productId,
-          paymentId: result.paymentId,
-          txid: result.txid,
-        });
-        onSuccess?.();
-      } else {
-        setError("الدفع فشل. يرجى المحاولة مرة أخرى.");
-      }
-    } catch (err: any) {
-      const code = err?.code;
-      const message =
-        code === "product_not_found"
-          ? "المنتج غير موجود"
-          : code === "purchase_cancelled"
-            ? "تم إلغاء عملية الشراء"
-            : code === "purchase_error"
-              ? "حدث خطأ في الدفع"
-              : "حدث خطأ غير متوقع";
-      setError(message);
-      console.error("[Subscription] Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="relative inline-block">
-      <Button
-        onClick={handlePayment}
-        disabled={loading}
-        variant="primary"
-        className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold"
-      >
-        <IconSparkle size={16} />
-        <span className="rx-clamp-1">{label}</span>
-      </Button>
-      {error && (
-        <div className="absolute top-full right-0 mt-2 rounded-lg bg-red-900/90 px-3 py-2 text-xs text-white whitespace-nowrap shadow-lg">
-          {error}
+          <div className="space-y-2 text-pretty leading-relaxed">
+            <p className="text-xs text-muted-foreground text-center">
+              لتفعيل الاشتراك، إتمام الدفع، أو في حال مواجهة أي مشاكل تقنية، يرجى التواصل مع الدعم الفني مباشرة عبر البريد الإلكتروني الخاص بنا:
+            </p>
+            <p className="text-center font-bold text-gold select-all text-sm border border-dashed border-gold/30 p-2 rounded-lg bg-navy-deep/20">
+              rdx.prv@gmail.com
+            </p>
+          </div>
         </div>
-      )}
+
+        {/* زر الإجراء السفلي */}
+        <div className="mt-6">
+          <Button 
+            variant="gold" 
+            className="w-full py-3 text-base font-bold"
+            onClick={() => {
+              // هنا يمكن ربط دفع الـ Pi الفعلي مستقبلاً إذا أردت تفعيل الدفع المباشر
+              window.location.href = "mailto:rdx.prv@gmail.com?subject=RoadX Subscription Request";
+            }}
+          >
+            تواصل معنا لتأكيد الاشتراك
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
