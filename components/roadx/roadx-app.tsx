@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoSubscriptionModal } from "./payment-button";
 import { useEffect, useState } from "react";
 import { RoadXProvider, useRoadX } from "@/contexts/roadx-context";
 import type { TabId } from "@/lib/roadx/data";
@@ -50,6 +51,25 @@ function AppInner() {
       <BottomNav tab={tab} onNavigate={navigate} />
       <StorageNotice />
       <ToastHost />
+
+      return (
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+      <AppHeader tab={tab} onNavigate={navigate} />
+      <main className="flex-1 pb-20">
+        {tab === "home" && <HomeView onOpenTrack={openTrack} />}
+        {tab === "music" && <MusicView trackId={trackId} onOpenTrack={openTrack} />}
+        {tab === "songs" && <SongsView onOpenTrack={openTrack} />}
+        {tab === "playlists" && <PlaylistsView onOpenTrack={openTrack} />}
+        {tab === "about" && <AboutView />}
+        {tab === "contact" && <ContactView />}
+      </main>
+      <BottomNav tab={tab} onNavigate={navigate} />
+      <StorageNotice />
+      <ToastHost />
+      {/* استدعاء نافذة الاشتراك التلقائية هنا */}
+      <AutoSubscriptionModal />
+    </div>
+  );
     </div>
   );
 }
