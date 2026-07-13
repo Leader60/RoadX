@@ -51,25 +51,8 @@ function AppInner() {
       <BottomNav tab={tab} onNavigate={navigate} />
       <StorageNotice />
       <ToastHost />
-
-      return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
-      <AppHeader tab={tab} onNavigate={navigate} />
-      <main className="flex-1 pb-20">
-        {tab === "home" && <HomeView onOpenTrack={openTrack} />}
-        {tab === "music" && <MusicView trackId={trackId} onOpenTrack={openTrack} />}
-        {tab === "songs" && <SongsView onOpenTrack={openTrack} />}
-        {tab === "playlists" && <PlaylistsView onOpenTrack={openTrack} />}
-        {tab === "about" && <AboutView />}
-        {tab === "contact" && <ContactView />}
-      </main>
-      <BottomNav tab={tab} onNavigate={navigate} />
-      <StorageNotice />
-      <ToastHost />
-      {/* استدعاء نافذة الاشتراك التلقائية هنا */}
+      {/* استدعاء نافذة الاشتراك التلقائية هنا لتظهر بعد 15 ثانية */}
       <AutoSubscriptionModal />
-    </div>
-  );
     </div>
   );
 }
