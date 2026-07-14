@@ -23,7 +23,8 @@ interface PiAuthContextType {
   products: Product[] | null;
   restoredPurchases: UserPurchaseBalance[] | null;
   reinitialize: () => Promise<void>;
-  isLoading: boolean; // ✅ أضفنا هذا
+  isLoading: boolean;
+  authenticate: () => Promise<void>;
 }
 
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
@@ -42,7 +43,10 @@ const loadPiSDK = (): Promise<void> => {
     script.src = PI_NETWORK_CONFIG.SDK_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => resolve();
+    script.onerror = () => {
+      console.warn("⚠️ Failed to load Pi SDK, continuing...");
+      resolve();
+    };
     document.head.appendChild(script);
   });
 };
@@ -61,15 +65,18 @@ const loadSDKLite = (): Promise<void> => {
     script.src = PI_NETWORK_CONFIG.SDK_LITE_URL;
     script.async = true;
     script.onload = () => resolve();
-    script.onerror = () => resolve();
+    script.onerror = () => {
+      console.warn("⚠️ Failed to load SDK Lite, continuing...");
+      resolve();
+    };
     document.head.appendChild(script);
   });
 };
 
 export function PiAuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // ✅ أضفنا هذا
-  const [authMessage, setAuthMessage] = useState("Initializing...");
+  const [isLoading, setIsLoading] = useState(true);
+  const [authMessage, setAuthMessage] = useState("جاري التهيئة...");
   const [hasError, setHasError] = useState(false);
   const [sdk, setSdk] = useState<SDKLiteInstance | null>(null);
   const [products, setProducts] = useState<Product[] | null>(null);
@@ -77,48 +84,118 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
     UserPurchaseBalance[] | null
   >(null);
 
+  // ✅ دالة المصادقة المنفصلة
+  const authenticate = async (): Promise<void> => {
+    try {
+      setAuthMessage("جاري المصادقة مع Pi Network...");
+      
+      if (typeof window !== 'undefined' && (window as any).Pi) {
+        const Pi = (window as any).Pi;
+        
+        // طلب المصادقة مع الصلاحيات المطلوبة
+        const authResponse = await Pi.authenticate([
+          'username',
+          'payments',
+          'wallet_address'
+        ]);
+        
+        console.log("✅ تمت المصادقة بنجاح:", authResponse);
+        setIsAuthenticated(true);
+        setAuthMessage("✅ تم المصادقة");
+        setHasError(false);
+      } else {
+        throw new Error("Pi SDK غير متوفر");
+      }
+    } catch (err: any) {
+      console.error("❌ فشل المصادقة:", err);
+      setHasError(true);
+      setAuthMessage(`⚠️ فشل المصادقة: ${err.message || "يرجى المحاولة مرة أخرى"}`);
+      setIsAuthenticated(false);
+      throw err;
+    }
+  };
+
   const initialize = async () => {
     setHasError(false);
-    setIsLoading(true); // ✅ بداية التحميل
-    
-    // حل فوري: بعد ثانية واحدة كحد أقصى، سيتم فتح التطبيق مهما كانت حالة الربط
+    setIsLoading(true);
+    setAuthMessage("جاري تحميل SDK...");
+
+    // ✅ مهلة أمان: بعد 3 ثواني، نفتح التطبيق مهما كان
     const fallbackTimeout = setTimeout(() => {
-      console.log("Bypassing auth lock screen.");
-      setIsAuthenticated(true);
-      setIsLoading(false); // ✅ انتهاء التحميل
-    }, 1000);
+      console.log("⏳ Fallback: Opening app after timeout");
+      setIsLoading(false);
+      setAuthMessage("⚠️ وضع عدم الاتصال");
+    }, 3000);
 
     try {
+      // تحميل Pi SDK
       await loadPiSDK();
-      if (typeof window !== 'undefined' && (window as any).Pi && (window as any).Pi.init) {
-        await (window as any).Pi.init({
-          version: "2.0",
-          sandbox: PI_NETWORK_CONFIG.SANDBOX,
-        });
+      
+      if (typeof window !== 'undefined' && (window as any).Pi) {
+        const Pi = (window as any).Pi;
+        
+        // تهيئة Pi SDK
+        if (Pi.init) {
+          await Pi.init({
+            version: "2.0",
+            sandbox: PI_NETWORK_CONFIG.SANDBOX || true,
+          });
+          console.log("✅ Pi SDK initialized");
+        }
       }
       
+      // تحميل SDK Lite
       await loadSDKLite();
-      if (typeof window !== 'undefined' && (window as any).SDKLite && (window as any).SDKLite.init) {
-        const sdkLite = await (window as any).SDKLite.init();
-        const pi = buildPiSdk();
+      
+      if (typeof window !== 'undefined' && (window as any).SDKLite) {
+        const SDKLite = (window as any).SDKLite;
         
-        try {
-          await pi.auth.login();
-          await sdkLite.login();
+        if (SDKLite.init) {
+          const sdkLite = await SDKLite.init();
+          console.log("✅ SDK Lite initialized");
+          
+          const pi = buildPiSdk();
           const sdkInstance = createSdk(sdkLite, pi);
           setSdk(sdkInstance);
-          const { products } = await sdkInstance.state.products();
-          setProducts(products);
-        } catch (e) {
-          console.warn("Silent login fallback active:", e);
+          
+          // محاولة جلب المنتجات
+          try {
+            const { products } = await sdkInstance.state.products();
+            setProducts(products);
+            console.log("✅ Products loaded:", products?.length);
+          } catch (productErr) {
+            console.warn("⚠️ Could not load products:", productErr);
+          }
+          
+          // ✅ محاولة المصادقة التلقائية (حاول ولا توقف التطبيق إذا فشلت)
+          try {
+            setAuthMessage("جاري المصادقة التلقائية...");
+            // نحاول المصادقة ولكن لا ننتظر طويلاً
+            const authPromise = authenticate();
+            const timeoutPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                console.log("⏳ Authentication timeout, continuing...");
+                resolve(null);
+              }, 5000);
+            });
+            
+            await Promise.race([authPromise, timeoutPromise]);
+          } catch (authErr) {
+            console.warn("⚠️ Auto-authentication timeout, user can authenticate manually");
+            // لا نوقف التطبيق إذا فشلت المصادقة التلقائية
+            setAuthMessage("⚠️ اضغط على زر الدفع للمصادقة");
+          }
         }
       }
     } catch (err) {
-      console.error("Initialization warning:", err);
+      console.error("❌ Initialization error:", err);
+      setHasError(true);
+      setAuthMessage("⚠️ وضع عدم الاتصال - بعض الميزات غير متوفرة");
     } finally {
       clearTimeout(fallbackTimeout);
-      setIsAuthenticated(true);
-      setIsLoading(false); // ✅ انتهاء التحميل
+      setIsLoading(false);
+      // نضمن أن التطبيق مفتوح دائماً
+      setIsAuthenticated(prev => prev || false);
     }
   };
 
@@ -128,13 +205,14 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   const value: PiAuthContextType = {
     isAuthenticated,
-    isLoading, // ✅ أضفنا هذا
+    isLoading,
     authMessage,
     hasError,
     sdk,
     products,
     restoredPurchases,
     reinitialize: initialize,
+    authenticate, // ✅ إضافة دالة المصادقة
   };
 
   return (
