@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useRoadX } from "@/contexts/roadx-context";
+import { usePurchase, useUserState } from "@/lib/pi-payment";
 import { IconSparkle } from "./icons";
 
 // عنوان المحفظة الشخصية لاستقبال الدفع اليدوي الاحتياطي
 const YOUR_PERSONAL_PI_WALLET = "GBR3WU2DAHS5WNNYU7OPMSTF7OWSMWPPOR2IOU752HSM6S4L3PTSPBUH";
 
-type ModalStep = "FORM" | "PAYMENT_METHOD" | "AUTO_PAYING" | "MANUAL_INSTRUCTIONS" | "SUCCESS";
+type ModalStep = "FORM" | "PAYMENT_METHOD" | "AUTO_PAYING" | "MANUAL_INSTRUCTIONS" | "SUCCESS" | "ERROR";
 
 interface PaymentButtonProps {
   onClick?: () => void;
@@ -15,7 +16,7 @@ interface PaymentButtonProps {
   children?: React.ReactNode;
 }
 
-// زر الاشتراك الرئيسي (يطلق حدث لفتح المودال)
+// زر الاشتراك الرئيسي
 export function SubscriptionButton({ onClick, className, children }: PaymentButtonProps) {
   const handlePress = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -35,7 +36,7 @@ export function SubscriptionButton({ onClick, className, children }: PaymentButt
   );
 }
 
-// زر الدفع (يطلق حدث لفتح المودال)
+// زر الدفع
 export function PaymentButton({ onClick, className, children }: PaymentButtonProps) {
   const handlePress = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,6 +58,8 @@ export function PaymentButton({ onClick, className, children }: PaymentButtonPro
 export function AutoSubscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useRoadX();
+  const { makePurchase } = usePurchase();
+  const { restore } = useUserState();
 
   const [step, setStep] = useState<ModalStep>("FORM");
   const [fullName, setFullName] = useState("");
@@ -66,9 +69,41 @@ export function AutoSubscriptionModal() {
   const [txId, setTxId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [purchaseResult, setPurchaseResult] = useState<any>(null);
 
   const [activationDate, setActivationDate] = useState("");
   const [expirationDate, setExpirationDate] = useState("");
+
+  // PRODUCT ID - تأكد من تطابقه مع ما في App Studio
+  const PRODUCT_ID = "roadx-xp1j";
+
+  // ==========================================
+  // التحقق من الاشتراك عند تحميل المودال
+  // ==========================================
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const restored = await restore();
+        
+        if (restored?.purchases) {
+          const hasSubscription = restored.purchases.some(
+            (p: any) => p.productId === PRODUCT_ID && p.quantity > 0
+          );
+          
+          if (hasSubscription) {
+            sessionStorage.setItem("roadx_user_choice", "premium_active");
+            console.log("✅ تم التحقق: المستخدم لديه اشتراك نشط");
+          }
+        }
+      } catch (err) {
+        console.log("ℹ️ لا يمكن التحقق من الاشتراك حالياً:", err);
+      }
+    };
+    
+    const timer = setTimeout(checkSubscription, 2000);
+    return () => clearTimeout(timer);
+  }, [restore]);
 
   useEffect(() => {
     const now = new Date();
@@ -120,51 +155,51 @@ export function AutoSubscriptionModal() {
   };
 
   // ==========================================
-  // الدالة المعدلة للدفع المباشر عبر Pi SDK
+  // الدالة الرئيسية للدفع - تدعم Non-Consumable
   // ==========================================
   const initiatePiPayment = async () => {
     setStep("AUTO_PAYING");
+    setErrorMessage("");
     toast?.("جاري تحضير بوابة الدفع الآمنة...");
 
     try {
-      // التحقق من وجود Pi SDK في المتصفح
-      if (typeof window === 'undefined' || !(window as any).Pi) {
-        throw new Error("Pi SDK غير محمّل. يرجى فتح التطبيق من خلال Pi Browser.");
-      }
-
-      const Pi = (window as any).Pi;
-
-      // إنشاء معرف دفع فريد
-      const paymentId = `roadx_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-      console.log("🔄 جاري إنشاء الدفع بـ ID:", paymentId);
-
-      // إنشاء الدفع في Pi Network
-      const payment = await Pi.createPayment({
-        amount: 1, // 1 Pi
-        memo: `اشتراك سنوي في RoadX Premium - ${fullName}`,
-        paymentId: paymentId,
-        metadata: {
-          fullName: fullName,
-          email: email,
-          phone: phone || '',
-          country: country || '',
-          activationDate: activationDate,
-          expirationDate: expirationDate
-        }
-      });
-
-      console.log("✅ تم إنشاء الدفع بنجاح:", payment);
-
-      // التحقق من نجاح الدفع
-      if (payment && payment.identifier) {
-        toast?.("✅ تم تأكيد الدفع بنجاح!");
+      console.log(`🔄 جاري تنفيذ الدفع للمنتج: ${PRODUCT_ID}`);
+      
+      // أولاً: التحقق من وجود اشتراك نشط
+      try {
+        const restored = await restore();
+        console.log("📦 نتائج الاستعادة:", restored);
         
-        // حفظ البيانات في قاعدة البيانات
+        const existingSubscription = restored?.purchases?.find(
+          (p: any) => p.productId === PRODUCT_ID && p.quantity > 0
+        );
+        
+        if (existingSubscription) {
+          toast?.("✅ لديك اشتراك نشط بالفعل! جاري التفعيل...");
+          await saveSubscriptionToDatabase(
+            `restored_${Date.now()}`,
+            "existing_user",
+            "existing_subscriber"
+          );
+          return;
+        }
+      } catch (restoreErr) {
+        console.log("ℹ️ لا يوجد اشتراك سابق، متابعة بالشراء الجديد:", restoreErr);
+      }
+      
+      // إذا لم يوجد اشتراك، نقوم بالشراء
+      const result = await makePurchase(PRODUCT_ID);
+      
+      console.log("✅ نتيجة الدفع:", result);
+      
+      if (result && result.ok) {
+        toast?.("✅ تم تأكيد الدفع بنجاح!");
+        setPurchaseResult(result);
+        
         await saveSubscriptionToDatabase(
-          payment.txid || payment.identifier,
-          payment.user?.uid || "pi_user",
-          payment.user?.username || "pi_user"
+          result.txid || `tx_${Date.now()}`,
+          result.uid || "pi_user",
+          result.username || "pi_user"
         );
       } else {
         throw new Error("لم يتم تأكيد المعاملة من شبكة Pi");
@@ -173,20 +208,58 @@ export function AutoSubscriptionModal() {
     } catch (err: any) {
       console.error("❌ خطأ في الدفع:", err);
       
-      // عرض رسالة خطأ مفصلة حسب نوع الخطأ
-      let errorMessage = "فشل الدفع الأوتوماتيكي. ";
-      if (err.message?.includes("sandbox")) {
-        errorMessage += "يرجى التأكد من أن التطبيق يعمل في بيئة Pi Browser.";
-      } else if (err.message?.includes("user declined")) {
-        errorMessage += "تم رفض المعاملة من قبل المستخدم.";
-      } else if (err.message?.includes("network")) {
-        errorMessage += "مشكلة في الاتصال بالشبكة. تحقق من اتصالك بالإنترنت.";
+      let errorMsg = "فشل الدفع الأوتوماتيكي. ";
+      
+      if (err.name === "SDKLiteError") {
+        switch (err.code) {
+          case "product_not_found":
+            errorMsg = "المنتج غير متوفر. يرجى التواصل مع الدعم.";
+            break;
+          case "purchase_cancelled":
+            errorMsg = "تم إلغاء الدفع من قبل المستخدم.";
+            break;
+          case "purchase_error":
+            errorMsg = "حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.";
+            break;
+          default:
+            errorMsg = `خطأ في الدفع: ${err.message || "يرجى المحاولة مجدداً"}`;
+        }
+      } else if (err.message?.includes("already owned") || 
+                 err.message?.includes("already_owned") ||
+                 err.message?.includes("already purchased")) {
+        errorMsg = "لديك اشتراك نشط بالفعل! جاري استعادته...";
+        toast?.(errorMsg);
+        
+        try {
+          const restored = await restore({ keys: [PRODUCT_ID] });
+          
+          if (restored && restored.purchases) {
+            const activeSubscription = restored.purchases.find(
+              (p: any) => p.productId === PRODUCT_ID
+            );
+            
+            if (activeSubscription && activeSubscription.quantity > 0) {
+              toast?.("✅ تم استعادة الاشتراك بنجاح!");
+              await saveSubscriptionToDatabase(
+                `restored_${Date.now()}`,
+                "restored_user",
+                "restored_subscriber"
+              );
+              return;
+            }
+          }
+          errorMsg = "الاشتراك مملوك ولكن تعذر استعادته. يرجى التواصل مع الدعم.";
+        } catch (restoreErr) {
+          console.error("❌ فشل الاستعادة:", restoreErr);
+          errorMsg = "الاشتراك مملوك بالفعل ولكن تعذر استعادته. يرجى التواصل مع الدعم.";
+        }
       } else {
-        errorMessage += err?.message || "يرجى المحاولة مجدداً أو استخدام الدفع اليدوي.";
+        errorMsg += err?.message || "يرجى المحاولة مجدداً أو استخدام الدفع اليدوي.";
       }
       
-      toast?.(errorMessage);
-      setStep("PAYMENT_METHOD");
+      setErrorMessage(errorMsg);
+      toast?.(errorMsg);
+      setStep("ERROR");
     }
   };
 
@@ -209,23 +282,44 @@ export function AutoSubscriptionModal() {
   };
 
   // ==========================================
-  // دالة حفظ البيانات في قاعدة البيانات (معدلة)
+  // دالة حفظ البيانات في قاعدة البيانات
   // ==========================================
   const saveSubscriptionToDatabase = async (transactionId: string, uid: string, username: string) => {
+    const isRestored = transactionId.startsWith("restored_");
+    const existingExpiry = sessionStorage.getItem("roadx_expiry");
+    
+    let finalExpirationDate = expirationDate;
+    if (isRestored && existingExpiry) {
+      try {
+        const parsed = new Date(existingExpiry);
+        if (!isNaN(parsed.getTime())) {
+          finalExpirationDate = existingExpiry;
+        }
+      } catch (e) {
+        console.log("ℹ️ استخدام تاريخ انتهاء جديد");
+      }
+    }
+    
     const subscriptionData = {
       fullName,
       email,
       phone,
       country,
-      activationDate,
-      expirationDate,
+      activationDate: isRestored ? new Date().toLocaleDateString("ar-EG", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }) : activationDate,
+      expirationDate: finalExpirationDate,
       piUsername: username,
       piUid: uid,
       transactionId,
       paymentId: `payment_${Date.now()}`,
       amount: 1,
       memo: `اشتراك سنوي - ${fullName}`,
-      timestamp: new Date().toISOString()
+      productId: PRODUCT_ID,
+      timestamp: new Date().toISOString(),
+      isRestored: isRestored
     };
 
     try {
@@ -243,20 +337,17 @@ export function AutoSubscriptionModal() {
 
       console.log("✅ تم حفظ البيانات بنجاح:", result);
       
-      // تخزين حالة المستخدم في Session Storage
       sessionStorage.setItem("roadx_user_choice", "premium_active");
       if (result.data?.walletAddress) {
         sessionStorage.setItem("roadx_wallet", result.data.walletAddress);
       }
-      sessionStorage.setItem("roadx_expiry", expirationDate);
+      sessionStorage.setItem("roadx_expiry", finalExpirationDate);
       
       setStep("SUCCESS");
       
     } catch (error: any) {
       console.error("❌ فشل حفظ البيانات:", error);
       toast?.(`فشل حفظ البيانات: ${error.message}`);
-      
-      // في حالة فشل حفظ البيانات، نعود إلى خطوة الدفع
       setStep("PAYMENT_METHOD");
       throw error;
     } finally {
@@ -269,7 +360,7 @@ export function AutoSubscriptionModal() {
   // ==========================================
   const handleSendEmailReceipt = () => {
     const mailtoLink = `mailto:${email},rdx.prv@gmail.com?subject=تأكيد اشتراك RoadX Premium&body=${encodeURIComponent(
-      `أهلاً بك في عائلة RoadX!\n\nتم استقبال طلب اشتراكك Premium بنجاح.\n\nتفاصيل الاشتراك السنوي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- رمز المعاملة (TxID): ${txId || "معاملة أوتوماتيكية"}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 1 Pi سنوياً\n\nإدارة منصة RoadX`
+      `أهلاً بك في عائلة RoadX!\n\nتم استقبال طلب اشتراكك Premium بنجاح.\n\nتفاصيل الاشتراك السنوي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- رمز المعاملة (TxID): ${txId || purchaseResult?.txid || "معاملة أوتوماتيكية"}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 1 Pi سنوياً\n\nإدارة منصة RoadX`
     )}`;
     window.location.href = mailtoLink;
   };
@@ -284,14 +375,19 @@ export function AutoSubscriptionModal() {
   };
 
   // ==========================================
-  // واجهة المستخدم
+  // دالة إعادة المحاولة
+  // ==========================================
+  const handleRetry = () => {
+    setStep("PAYMENT_METHOD");
+    setErrorMessage("");
+  };
+
+  // ==========================================
+  // واجهة المستخدم (نفسها كما كانت)
   // ==========================================
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 rx-fade-in">
-      {/* خلفية معتمة */}
       <div className="absolute inset-0 bg-navy-deep/90 backdrop-blur-md" onClick={() => setIsOpen(false)} />
-
-      {/* المودال */}
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-pop rx-no-scrollbar">
         
         {step === "FORM" && (
@@ -360,7 +456,6 @@ export function AutoSubscriptionModal() {
               >
                 متابعة واختيار طريقة الدفع
               </button>
-
               <button
                 type="button"
                 onClick={handleContinueFree}
@@ -425,6 +520,42 @@ export function AutoSubscriptionModal() {
             <p className="text-[10px] text-muted-foreground/60">
               في حال لم تظهر النافذة، استخدم طريقة الدفع اليدوي (P2P)
             </p>
+          </div>
+        )}
+
+        {step === "ERROR" && (
+          <div className="space-y-4 text-center" dir="rtl">
+            <div className="flex flex-col items-center gap-2">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                <span className="text-2xl font-bold">✕</span>
+              </span>
+              <h3 className="text-xl font-bold text-red-400">فشل الدفع</h3>
+              <p className="text-sm text-muted-foreground">{errorMessage || "حدث خطأ غير متوقع"}</p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press transition-all"
+              >
+                محاولة مرة أخرى
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep("MANUAL_INSTRUCTIONS")}
+                className="w-full py-2.5 text-sm font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl rx-press transition-all"
+              >
+                استخدام الدفع اليدوي (P2P)
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         )}
 
@@ -517,6 +648,12 @@ export function AutoSubscriptionModal() {
                 <span className="text-muted-foreground">قيمة الدفع المرسلة:</span>
                 <span className="font-bold text-gold">1 Pi</span>
               </div>
+              {purchaseResult?.txid && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">رمز المعاملة:</span>
+                  <span className="font-mono text-foreground truncate max-w-[150px]">{purchaseResult.txid}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t border-border/40 pt-2 mt-2 text-xs">
                 <span className="text-muted-foreground">تاريخ الاشتراك:</span>
                 <span className="font-semibold text-foreground rx-nums">{activationDate}</span>
