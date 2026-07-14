@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRoadX } from "@/contexts/roadx-context";
 import { usePurchase, useUserState } from "@/lib/pi-payment";
+import { usePiAuth } from "@/contexts/pi-auth-context";
 import { IconSparkle } from "./icons";
 
 // عنوان المحفظة الشخصية لاستقبال الدفع اليدوي الاحتياطي
@@ -60,6 +61,7 @@ export function AutoSubscriptionModal() {
   const { toast } = useRoadX();
   const { makePurchase } = usePurchase();
   const { restore } = useUserState();
+  const { isAuthenticated, authenticate, isLoading: authLoading, sdk } = usePiAuth();
 
   const [step, setStep] = useState<ModalStep>("FORM");
   const [fullName, setFullName] = useState("");
@@ -155,6 +157,26 @@ export function AutoSubscriptionModal() {
   };
 
   // ==========================================
+  // دالة المصادقة مع Pi Network
+  // ==========================================
+  const handleAuthenticate = async () => {
+    try {
+      toast?.("جاري المصادقة مع Pi Network...");
+      await authenticate();
+      if (isAuthenticated) {
+        toast?.("✅ تمت المصادقة بنجاح!");
+        return true;
+      } else {
+        throw new Error("فشلت المصادقة");
+      }
+    } catch (err: any) {
+      console.error("❌ فشل المصادقة:", err);
+      toast?.(`فشل المصادقة: ${err.message || "يرجى المحاولة مرة أخرى"}`);
+      return false;
+    }
+  };
+
+  // ==========================================
   // الدالة الرئيسية للدفع - تدعم Non-Consumable
   // ==========================================
   const initiatePiPayment = async () => {
@@ -163,9 +185,24 @@ export function AutoSubscriptionModal() {
     toast?.("جاري تحضير بوابة الدفع الآمنة...");
 
     try {
+      // ✅ الخطوة 1: التحقق من المصادقة
+      if (!isAuthenticated) {
+        const authSuccess = await handleAuthenticate();
+        if (!authSuccess) {
+          throw new Error("يرجى المصادقة مع Pi Network أولاً");
+        }
+        // انتظار قليل بعد المصادقة
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // ✅ الخطوة 2: التحقق من وجود SDK
+      if (!sdk) {
+        throw new Error("SDK غير جاهز. يرجى المحاولة مرة أخرى.");
+      }
+
       console.log(`🔄 جاري تنفيذ الدفع للمنتج: ${PRODUCT_ID}`);
       
-      // أولاً: التحقق من وجود اشتراك نشط
+      // ✅ الخطوة 3: التحقق من وجود اشتراك نشط
       try {
         const restored = await restore();
         console.log("📦 نتائج الاستعادة:", restored);
@@ -187,7 +224,7 @@ export function AutoSubscriptionModal() {
         console.log("ℹ️ لا يوجد اشتراك سابق، متابعة بالشراء الجديد:", restoreErr);
       }
       
-      // إذا لم يوجد اشتراك، نقوم بالشراء
+      // ✅ الخطوة 4: تنفيذ الدفع
       const result = await makePurchase(PRODUCT_ID);
       
       console.log("✅ نتيجة الدفع:", result);
@@ -210,34 +247,23 @@ export function AutoSubscriptionModal() {
       
       let errorMsg = "فشل الدفع الأوتوماتيكي. ";
       
-      if (err.name === "SDKLiteError") {
-        switch (err.code) {
-          case "product_not_found":
-            errorMsg = "المنتج غير متوفر. يرجى التواصل مع الدعم.";
-            break;
-          case "purchase_cancelled":
-            errorMsg = "تم إلغاء الدفع من قبل المستخدم.";
-            break;
-          case "purchase_error":
-            errorMsg = "حدث خطأ أثناء الدفع. يرجى المحاولة مرة أخرى.";
-            break;
-          default:
-            errorMsg = `خطأ في الدفع: ${err.message || "يرجى المحاولة مجدداً"}`;
-        }
-      } else if (err.message?.includes("already owned") || 
-                 err.message?.includes("already_owned") ||
-                 err.message?.includes("already purchased")) {
+      // معالجة الأخطاء حسب نوعها
+      if (err.message?.includes("authenticate") || err.message?.includes("auth")) {
+        errorMsg = "فشل المصادقة. يرجى التأكد من فتح التطبيق في Pi Browser والمحاولة مرة أخرى.";
+      } else if (err.message?.includes("sandbox")) {
+        errorMsg = "يرجى التأكد من أن التطبيق يعمل في Pi Browser.";
+      } else if (err.message?.includes("user declined") || err.message?.includes("cancelled")) {
+        errorMsg = "تم إلغاء الدفع من قبل المستخدم.";
+      } else if (err.message?.includes("already owned") || err.message?.includes("already_owned")) {
         errorMsg = "لديك اشتراك نشط بالفعل! جاري استعادته...";
         toast?.(errorMsg);
         
         try {
-          const restored = await restore({ keys: [PRODUCT_ID] });
-          
+          const restored = await restore();
           if (restored && restored.purchases) {
             const activeSubscription = restored.purchases.find(
               (p: any) => p.productId === PRODUCT_ID
             );
-            
             if (activeSubscription && activeSubscription.quantity > 0) {
               toast?.("✅ تم استعادة الاشتراك بنجاح!");
               await saveSubscriptionToDatabase(
@@ -253,6 +279,8 @@ export function AutoSubscriptionModal() {
           console.error("❌ فشل الاستعادة:", restoreErr);
           errorMsg = "الاشتراك مملوك بالفعل ولكن تعذر استعادته. يرجى التواصل مع الدعم.";
         }
+      } else if (err.message?.includes("SDK not ready")) {
+        errorMsg = "SDK لا يزال قيد التحميل. يرجى الانتظار والمحاولة مرة أخرى.";
       } else {
         errorMsg += err?.message || "يرجى المحاولة مجدداً أو استخدام الدفع اليدوي.";
       }
@@ -383,7 +411,7 @@ export function AutoSubscriptionModal() {
   };
 
   // ==========================================
-  // واجهة المستخدم (نفسها كما كانت)
+  // واجهة المستخدم
   // ==========================================
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 rx-fade-in">
@@ -472,17 +500,23 @@ export function AutoSubscriptionModal() {
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-gold">اختر طريقة الدفع المناسبة لك</h3>
               <p className="text-xs text-muted-foreground mt-1">تكلفة الاشتراك السنوي: 1 Pi</p>
+              {!isAuthenticated && (
+                <p className="text-xs text-amber-500 mt-2">⚠️ يرجى المصادقة مع Pi Network أولاً</p>
+              )}
             </div>
 
             <div className="space-y-3">
               <button
                 type="button"
                 onClick={initiatePiPayment}
-                className="w-full p-4 rounded-xl border border-gold/40 bg-navy-deep/50 hover:bg-navy-deep text-right flex items-center justify-between transition-all group rx-press"
+                disabled={authLoading}
+                className="w-full p-4 rounded-xl border border-gold/40 bg-navy-deep/50 hover:bg-navy-deep text-right flex items-center justify-between transition-all group rx-press disabled:opacity-50"
               >
                 <div className="space-y-1">
                   <h4 className="font-bold text-sm text-gold group-hover:underline">دفع أوتوماتيكي سريع (موصى به)</h4>
-                  <p className="text-[11px] text-muted-foreground">فتح المحفظة والمصادقة الفورية من داخل المتصفح</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {authLoading ? "جاري التحميل..." : "فتح المحفظة والمصادقة الفورية من داخل المتصفح"}
+                  </p>
                 </div>
                 <span className="text-xl">⚡</span>
               </button>
@@ -513,9 +547,14 @@ export function AutoSubscriptionModal() {
         {step === "AUTO_PAYING" && (
           <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
             <div className="h-12 w-12 rounded-full border-4 border-gold border-t-transparent rx-spin mb-2" />
-            <h3 className="text-lg font-bold text-gold">جاري الاتصال بـ Pi Wallet...</h3>
+            <h3 className="text-lg font-bold text-gold">
+              {authLoading ? "جاري تحميل SDK..." : "جاري الاتصال بـ Pi Wallet..."}
+            </h3>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-              يرجى المصادقة وتأكيد المعاملة بقيمة <span className="font-bold text-foreground">1 Pi</span> فور ظهور نافذة التأكيد.
+              {authLoading 
+                ? "يرجى الانتظار حتى اكتمال التحميل..." 
+                : "يرجى المصادقة وتأكيد المعاملة بقيمة 1 Pi فور ظهور نافذة التأكيد."
+              }
             </p>
             <p className="text-[10px] text-muted-foreground/60">
               في حال لم تظهر النافذة، استخدم طريقة الدفع اليدوي (P2P)
