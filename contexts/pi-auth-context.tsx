@@ -1,121 +1,95 @@
 "use client";
+import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
-import type {
-  Product,
-  SDKLiteInstance,
-  UserPurchaseBalance,
-} from "@/lib/sdklite-types";
+interface PiUser {
+  uid: string;
+  username: string;
+}
 
 interface PiAuthContextType {
   isAuthenticated: boolean;
-  authMessage: string;
-  hasError: boolean;
-  sdk: SDKLiteInstance | null;
-  products: Product[] | null;
-  restoredPurchases: UserPurchaseBalance[] | null;
-  reinitialize: () => Promise<void>;
   isLoading: boolean;
-  authenticate: () => Promise<void>;
+  hasError: boolean;
+  authMessage: string;
+  user: PiUser | null;
+  authenticate: () => Promise<PiUser | null>; // يُرجع المستخدم مباشرة (يحل مشكلة الـ stale closure)
 }
 
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
 
-// ✅ Mock SDK - محاكاة بسيطة للـ SDK
-const createMockSDK = (): SDKLiteInstance => {
-  return {
-    makePurchase: async (productId: string) => {
-      console.log("🔵 Mock purchase:", productId);
-      return {
-        ok: true,
-        productId,
-        paymentId: `mock_${Date.now()}`,
-        txid: `tx_mock_${Date.now()}`,
-        uid: "mock_user",
-        username: "mock_user"
-      };
-    },
-    isAdNetworkSupported: async () => false,
-    showInterstitial: async () => false,
-    showRewarded: async () => false,
-    state: {
-      get: async (key: string) => null,
-      set: async (key: string, value: any) => {},
-      purchases: async () => ({ items: [] }),
-      consume: async (productId: string, quantity?: number) => ({ 
-        productId, 
-        quantity: 0 
-      }),
-      restore: async (options?: any) => ({ items: [] }),
-      products: async () => ({ products: [] })
-    }
-  };
-};
+const SANDBOX = true; // Testnet — غيّرها إلى false عند الانتقال لاحقاً إلى Mainnet
+
+function onIncompletePaymentFound(payment: any) {
+  console.log("⚠️ دفعة سابقة غير مكتملة، يُفضّل إكمالها من السيرفر:", payment);
+}
 
 export function PiAuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // ✅ دائماً مصادق
-  const [isLoading, setIsLoading] = useState(false); // ✅ ليس في حالة تحميل
-  const [authMessage, setAuthMessage] = useState("✅ جاهز");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [sdk, setSdk] = useState<SDKLiteInstance | null>(null);
+  const [authMessage, setAuthMessage] = useState("جاري تحميل Pi SDK...");
+  const [user, setUser] = useState<PiUser | null>(null);
 
-  // ✅ تهيئة مباشرة
   useEffect(() => {
-    console.log("🚀 PiAuthProvider: Initializing...");
-    
-    // إنشاء SDK وهمي فوراً
-    const mockSDK = createMockSDK();
-    setSdk(mockSDK);
-    setIsAuthenticated(true);
-    setIsLoading(false);
-    setAuthMessage("✅ جاهز");
-    
-    console.log("✅ PiAuthProvider: Ready with mock SDK");
+    let cancelled = false;
+    const waitForPi = async () => {
+      let attempts = 0;
+      while (!(window as any).Pi && attempts < 50) {
+        await new Promise((r) => setTimeout(r, 100));
+        attempts++;
+      }
+      if (cancelled) return;
+      if (!(window as any).Pi) {
+        setHasError(true);
+        setAuthMessage("لم يتم العثور على Pi SDK — تأكد أنك تفتح التطبيق داخل Pi Browser.");
+        setIsLoading(false);
+        return;
+      }
+      try {
+        await (window as any).Pi.init({ version: "2.0", sandbox: SANDBOX });
+        setAuthMessage("جاهز");
+      } catch (err: any) {
+        setHasError(true);
+        setAuthMessage("فشل تهيئة Pi SDK: " + (err?.message || ""));
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    waitForPi();
+    return () => { cancelled = true; };
   }, []);
 
-  const authenticate = async (): Promise<void> => {
-    console.log("🔵 Authenticate called");
-    setIsAuthenticated(true);
-    setAuthMessage("✅ تم المصادقة");
-  };
-
-  const reinitialize = async (): Promise<void> => {
-    console.log("🔵 Reinitialize called");
-    const mockSDK = createMockSDK();
-    setSdk(mockSDK);
-    setIsAuthenticated(true);
-    setIsLoading(false);
-  };
-
-  const value: PiAuthContextType = {
-    isAuthenticated,
-    isLoading,
-    authMessage,
-    hasError,
-    sdk,
-    products: null,
-    restoredPurchases: null,
-    reinitialize,
-    authenticate,
+  const authenticate = async (): Promise<PiUser | null> => {
+    const Pi = (window as any).Pi;
+    if (!Pi) {
+      setHasError(true);
+      setAuthMessage("Pi SDK غير متاح.");
+      return null;
+    }
+    try {
+      const auth = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+      const piUser: PiUser = { uid: auth.user.uid, username: auth.user.username };
+      setUser(piUser);
+      setIsAuthenticated(true);
+      setAuthMessage("تمت المصادقة");
+      return piUser;
+    } catch (err: any) {
+      setIsAuthenticated(false);
+      setHasError(true);
+      setAuthMessage("فشلت المصادقة: " + (err?.message || ""));
+      return null;
+    }
   };
 
   return (
-    <PiAuthContext.Provider value={value}>
+    <PiAuthContext.Provider value={{ isAuthenticated, isLoading, hasError, authMessage, user, authenticate }}>
       {children}
     </PiAuthContext.Provider>
   );
 }
 
 export function usePiAuth() {
-  const context = useContext(PiAuthContext);
-  if (context === undefined) {
-    throw new Error("usePiAuth must be used within a PiAuthProvider");
-  }
-  return context;
+  const ctx = useContext(PiAuthContext);
+  if (!ctx) throw new Error("usePiAuth must be used within a PiAuthProvider");
+  return ctx;
 }
