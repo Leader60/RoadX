@@ -3,21 +3,60 @@
 import React, { useState, useEffect } from "react";
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useRoadX } from "@/contexts/roadx-context";
+import { usePurchase } from "@/lib/pi-payment"; 
 import { Button } from "./ui";
 import { IconSparkle } from "./icons";
 
-// عنوان محفظتك الشخصية لاستقبال الدفع اليدوي الاحتياطي
+// عنوان المحفظة الشخصية لاستقبال الدفع اليدوي الاحتياطي
 const YOUR_PERSONAL_PI_WALLET = "GBR3WU2DAHS5WNNYU7OPMSTF7OWSMWPPOR2IOU752HSM6S4L3PTSPBUH";
 
 type ModalStep = "FORM" | "PAYMENT_METHOD" | "AUTO_PAYING" | "MANUAL_INSTRUCTIONS" | "SUCCESS";
 
-export function SubscriptionButton() { return null; }
-export function PaymentButton() { return null; }
+interface PaymentButtonProps {
+  onClick?: () => void;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+// زر الاشتراك الرئيسي (يطلق حدث لفتح المودال)
+export function SubscriptionButton({ onClick, className, children }: PaymentButtonProps) {
+  const handlePress = () => {
+    if (onClick) onClick();
+    window.dispatchEvent(new CustomEvent("open-subscription-modal"));
+  };
+
+  return (
+    <Button
+      onClick={handlePress}
+      className={`px-6 py-2.5 font-bold rounded-xl shadow-lg rx-press flex items-center gap-2 bg-gold text-gold-foreground hover:opacity-90 ${className || ""}`}
+    >
+      <IconSparkle size={18} />
+      {children || "اشترك في Premium الآن"}
+    </Button>
+  );
+}
+
+// زر الدفع (يطلق حدث لفتح المودال)
+export function PaymentButton({ onClick, className, children }: PaymentButtonProps) {
+  const handlePress = () => {
+    if (onClick) onClick();
+    window.dispatchEvent(new CustomEvent("open-subscription-modal"));
+  };
+
+  return (
+    <Button
+      onClick={handlePress}
+      className={`px-6 py-2.5 font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl rx-press ${className || ""}`}
+    >
+      {children || "دفع 0.1 Pi"}
+    </Button>
+  );
+}
 
 export function AutoSubscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { sdk } = usePiAuth();
   const { toast } = useRoadX();
+  const { makePurchase } = usePurchase();
 
   const [step, setStep] = useState<ModalStep>("FORM");
   const [fullName, setFullName] = useState("");
@@ -56,6 +95,12 @@ export function AutoSubscriptionModal() {
     }
   }, []);
 
+  useEffect(() => {
+    const handleOpenModal = () => setIsOpen(true);
+    window.addEventListener("open-subscription-modal", handleOpenModal);
+    return () => window.removeEventListener("open-subscription-modal", handleOpenModal);
+  }, []);
+
   if (!isOpen) return null;
 
   const handleCopyWallet = () => {
@@ -74,109 +119,26 @@ export function AutoSubscriptionModal() {
     setStep("PAYMENT_METHOD");
   };
 
-  // 1. طريقة الدفع الأوتوماتيكية (عبر متصفح وبوابة Pi الرسمية)
   const initiatePiPayment = async () => {
-    // محاولة جلب مكتبة window.Pi بأكثر من طريقة للتأكد من تحميلها بالكامل داخل متصفح Pi
-    const globalPi = typeof window !== "undefined" ? (window.Pi || (window as any).Pi) : null;
-
-    if (!globalPi) {
-      toast?.("تنبيه: لم يتم العثور على Pi SDK في المتصفح. جاري تشغيل المحاكاة.");
-      setStep("AUTO_PAYING");
-      setTimeout(async () => {
-        await saveSubscriptionToDatabase("MOCK_TX_123", "guest_uid", "guest");
-      }, 2000);
-      return;
-    }
-
     setStep("AUTO_PAYING");
+    toast?.("جاري تحضير بوابة الدفع الآمنة...");
 
     try {
-      // تهيئة الـ SDK - تم حذف await هنا لمنع تعليق الصفحة
-      try {
-        globalPi.init({ version: "2.0", sandbox: false });
-      } catch (e) {
-        console.log("الـ SDK مهيأ مسبقاً بنجاح.");
+      const result = await makePurchase("roadx-xp1j"); 
+
+      if (result && result.ok) {
+        toast?.("تمت عملية الدفع بنجاح!");
+        await saveSubscriptionToDatabase(result.txid || "SDK_LITE_TX", result.uid || "pi_user", result.username || "user");
+      } else {
+        throw new Error("لم تكتمل المعاملة عبر المحفظة.");
       }
-
-      const scopes = ["username", "payments"];
-      
-      // دالة المصادقة وتسجيل الدخول
-      const authResult = await globalPi.authenticate(scopes, async (incompletePayment: any) => {
-        console.log("تم العثور على دفعة غير مكتملة:", incompletePayment);
-        // إبلاغ السيرفر بالدفعة غير المكتملة لمعالجتها
-        await fetch("/api/roadx/incomplete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ payment: incompletePayment }),
-        });
-      });
-
-      if (!authResult || !authResult.user) {
-        throw new Error("فشلت عملية التحقق من حساب Pi الخاص بك.");
-      }
-
-      const uid = authResult.user.uid;
-      const username = authResult.user.username;
-
-      const paymentData = {
-        amount: 0.1,
-        memo: "الاشتراك السنوي في منصة RoadX Premium",
-        metadata: { fullName, email, uid },
-      };
-
-      // إنشاء المعاملة المالية الفعلية وفتح المحفظة للمستخدم
-      globalPi.createPayment({
-        amount: paymentData.amount,
-        memo: paymentData.memo,
-        metadata: paymentData.metadata,
-      }, {
-        onReadyForServerApproval: async (paymentId: string) => {
-          try {
-            const res = await fetch("/api/roadx/approve-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId }),
-            });
-            if (!res.ok) throw new Error("فشل السيرفر في الموافقة على الدفعة.");
-          } catch (e) {
-            console.error("خطأ في اعتماد الدفعة على السيرفر:", e);
-          }
-        },
-        onReadyForServerCompletion: async (paymentId: string, txid: string) => {
-          try {
-            const response = await fetch("/api/roadx/complete-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, txid }),
-            });
-
-            if (response.ok) {
-              await saveSubscriptionToDatabase(txid, uid, username);
-            } else {
-              await saveSubscriptionToDatabase(txid || "TX_SUCCESS", uid, username);
-            }
-          } catch (e) {
-            await saveSubscriptionToDatabase(txid || "TX_SUCCESS", uid, username);
-          }
-        },
-        onCancel: (paymentId: string) => {
-          toast?.("تم إلغاء عملية الدفع.");
-          setStep("PAYMENT_METHOD");
-        },
-        onError: (error: any) => {
-          toast?.(`خطأ أثناء الدفع: ${error?.message || "يرجى المحاولة مرة أخرى"}`);
-          setStep("PAYMENT_METHOD");
-        }
-      });
-
     } catch (err: any) {
       console.error(err);
-      toast?.(`خطأ غير متوقع: ${err?.message || "تأكد من فتح الرابط داخل Pi Browser"}`);
+      toast?.(`فشل الدفع الأوتوماتيكي: ${err?.message || "يرجى المحاولة مجدداً أو استخدام الدفع اليدوي"}`);
       setStep("PAYMENT_METHOD");
     }
   };
 
-  // 2. طريقة الدفع اليدوي (P2P) وتأكيد إرسال الرمز
   const handleVerifyManualPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!txId.trim()) {
@@ -212,7 +174,7 @@ export function AutoSubscriptionModal() {
         body: JSON.stringify(subscriptionData),
       });
     } catch (error) {
-      console.error("فشل حفظ البيانات في قاعدة البيانات:", error);
+      console.error("فشل حفظ البيانات:", error);
     }
 
     sessionStorage.setItem("roadx_user_choice", "premium_active");
@@ -222,7 +184,7 @@ export function AutoSubscriptionModal() {
 
   const handleSendEmailReceipt = () => {
     const mailtoLink = `mailto:${email},rdx.prv@gmail.com?subject=تأكيد اشتراك RoadX Premium&body=${encodeURIComponent(
-      `أهلاً بك في عائلة RoadX!\n\nتم استقبال طلب اشتراكك Premium بنجاح.\n\nتفاصيل الاشتراك السنوي وعقدك المالي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- رمز المعاملة (TxID): ${txId || "معاملة أوتوماتيكية"}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 0.1 Pi سنوياً\n\nتصفح ممتع لكافة الأغاني والمحتوى الحصري بدون أي حظر!\n\nإدارة منصة RoadX`
+      `أهلاً بك في عائلة RoadX!\n\nتم استقبال طلب اشتراكك Premium بنجاح.\n\nتفاصيل الاشتراك السنوي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- رمز المعاملة (TxID): ${txId || "معاملة أوتوماتيكية"}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 0.1 Pi سنوياً\n\nإدارة منصة RoadX`
     )}`;
     window.location.href = mailtoLink;
   };
@@ -234,16 +196,17 @@ export function AutoSubscriptionModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-navy-deep/95 backdrop-blur-md" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 rx-fade-in">
+      {/* خلفية معتمة تستخدم متغير navy-deep المعرّف لديك */}
+      <div className="absolute inset-0 bg-navy-deep/90 backdrop-blur-md" onClick={() => setIsOpen(false)} />
 
-      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-no-scrollbar">
+      {/* المودال يعتمد على محاذاة وتنسيقات CSS المخصصة مثل rx-pop و rx-no-scrollbar */}
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-pop rx-no-scrollbar">
         
-        {/* الخطوة 1: نموذج تعبئة البيانات الكاملة */}
         {step === "FORM" && (
-          <form onSubmit={handleFormSubmit} className="space-y-4 text-right animate-in fade-in zoom-in duration-300" dir="rtl">
+          <form onSubmit={handleFormSubmit} className="space-y-4 text-right" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep text-gold animate-pulse">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep text-gold rx-pulse">
                 <IconSparkle size={24} />
               </span>
               <h3 className="text-xl font-bold rx-gold-text">الاشتراك في RoadX Premium</h3>
@@ -266,7 +229,7 @@ export function AutoSubscriptionModal() {
               <div>
                 <label className="block text-xs font-semibold text-gold mb-1">البريد الإلكتروني *</label>
                 <input
-                  type="type"
+                  type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -300,14 +263,14 @@ export function AutoSubscriptionModal() {
             </div>
 
             <div className="space-y-2 pt-2">
-              <Button type="submit" variant="gold" className="w-full py-2.5 text-sm font-bold">
+              <Button type="submit" className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground hover:opacity-90 rx-press">
                 متابعة واختيار طريقة الدفع
               </Button>
 
               <button
                 type="button"
                 onClick={handleContinueFree}
-                className="w-full py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors text-center border border-border hover:border-gold/30 rounded-xl"
+                className="w-full py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors text-center border border-border hover:border-gold/30 rounded-xl rx-press"
               >
                 المتابعة كحساب مجاني (محدود الصلاحيات)
               </button>
@@ -315,9 +278,8 @@ export function AutoSubscriptionModal() {
           </form>
         )}
 
-        {/* الخطوة 2: شاشة اختيار طريقة الدفع الفورية */}
         {step === "PAYMENT_METHOD" && (
-          <div className="space-y-5 text-right animate-in fade-in duration-300" dir="rtl">
+          <div className="space-y-5 text-right" dir="rtl">
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-gold">اختر طريقة الدفع المناسبة لك</h3>
               <p className="text-xs text-muted-foreground mt-1">تكلفة الاشتراك السنوي: 0.1 Pi</p>
@@ -325,8 +287,9 @@ export function AutoSubscriptionModal() {
 
             <div className="space-y-3">
               <button
+                type="button"
                 onClick={initiatePiPayment}
-                className="w-full p-4 rounded-xl border border-gold/40 bg-navy-deep/50 hover:bg-navy-deep text-right flex items-center justify-between transition-all group"
+                className="w-full p-4 rounded-xl border border-gold/40 bg-navy-deep/50 hover:bg-navy-deep text-right flex items-center justify-between transition-all group rx-press"
               >
                 <div className="space-y-1">
                   <h4 className="font-bold text-sm text-gold group-hover:underline">دفع أوتوماتيكي سريع (موصى به)</h4>
@@ -336,8 +299,9 @@ export function AutoSubscriptionModal() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setStep("MANUAL_INSTRUCTIONS")}
-                className="w-full p-4 rounded-xl border border-border bg-secondary/10 hover:bg-secondary/30 text-right flex items-center justify-between transition-all"
+                className="w-full p-4 rounded-xl border border-border bg-secondary/10 hover:bg-secondary/30 text-right flex items-center justify-between transition-all rx-press"
               >
                 <div className="space-y-1">
                   <h4 className="font-bold text-sm text-foreground">تحويل يدوي مباشر (P2P)</h4>
@@ -348,6 +312,7 @@ export function AutoSubscriptionModal() {
             </div>
 
             <button
+              type="button"
               onClick={() => setStep("FORM")}
               className="w-full text-center text-xs text-muted-foreground hover:text-foreground py-2"
             >
@@ -356,10 +321,9 @@ export function AutoSubscriptionModal() {
           </div>
         )}
 
-        {/* خطوة الدفع الأوتوماتيكي الفعلي */}
         {step === "AUTO_PAYING" && (
-          <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 animate-in fade-in duration-300">
-            <div className="h-12 w-12 rounded-full border-4 border-gold border-t-transparent animate-spin mb-2" />
+          <div className="flex flex-col items-center justify-center text-center p-8 space-y-4">
+            <div className="h-12 w-12 rounded-full border-4 border-gold border-t-transparent rx-spin mb-2" />
             <h3 className="text-lg font-bold text-gold">جاري الاتصال بـ Pi Wallet...</h3>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
               يرجى المصادقة وتأكيد المعاملة بقيمة <span className="font-bold text-foreground">0.1 Pi</span> فور ظهور نافذة التأكيد.
@@ -367,15 +331,14 @@ export function AutoSubscriptionModal() {
           </div>
         )}
 
-        {/* خطوة الدفع اليدوي البديل والاحتياطي */}
         {step === "MANUAL_INSTRUCTIONS" && (
-          <div className="space-y-4 text-right animate-in fade-in duration-300" dir="rtl">
-            <h3 className="text-lg font-bold text-gold text-center">خطوات الدفع اليدوي المباشر</h3>
+          <div className="space-y-4 text-right" dir="rtl">
+            <h3 className="text-lg font-bold text-gold text-center">خطوات الدفع اليدوي المباشس</h3>
             
             <div className="bg-secondary/20 border border-border p-3 rounded-xl text-xs space-y-1.5 leading-relaxed">
               <p>1. انسخ عنوان محفظتنا الشخصية بالأسفل.</p>
               <p>2. افتح تطبيق <span className="text-gold">Pi Wallet</span> وانقل القيمة (0.1 Pi) يدوياً.</p>
-              <p>3. بعد نجاح التحويل، انسخ رمز المعاملة (TxID) وضعه in الحقل أدناه لتأكيد طلبك.</p>
+              <p>3. بعد نجاح التحويل، انسخ رمز المعاملة (TxID) وضعه في الحقل أدناه لتأكيد طلبك.</p>
             </div>
 
             <div className="space-y-2">
@@ -390,7 +353,7 @@ export function AutoSubscriptionModal() {
                 <button
                   type="button"
                   onClick={handleCopyWallet}
-                  className="px-3 rounded-lg bg-gold text-navy-deep font-bold text-xs hover:bg-gold/80 transition-colors"
+                  className="px-3 rounded-lg bg-gold text-gold-foreground font-bold text-xs hover:opacity-90 transition-colors rx-press"
                 >
                   {copied ? "تم!" : "نسخ"}
                 </button>
@@ -414,15 +377,14 @@ export function AutoSubscriptionModal() {
                 <Button 
                   type="submit" 
                   disabled={isSubmitting} 
-                  variant="gold" 
-                  className="flex-1 py-2.5 text-xs font-bold"
+                  className="flex-1 py-2.5 text-xs font-bold bg-gold text-gold-foreground rx-press"
                 >
                   {isSubmitting ? "جاري الإرسال..." : "تأكيد وإرسال للتفعيل"}
                 </Button>
                 <button
                   type="button"
                   onClick={() => setStep("PAYMENT_METHOD")}
-                  className="px-4 py-2 text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border rounded-xl rx-press"
                 >
                   رجوع
                 </button>
@@ -431,11 +393,10 @@ export function AutoSubscriptionModal() {
           </div>
         )}
 
-        {/* الخطوة 3: نجاح تفعيل الاشتراك */}
         {step === "SUCCESS" && (
-          <div className="space-y-5 text-right animate-in zoom-in-95 duration-300" dir="rtl">
+          <div className="space-y-5 text-right rx-pop" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-2">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-bounce">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rx-heart">
                 <span className="text-2xl font-bold">✓</span>
               </span>
               <h3 className="text-xl font-bold text-emerald-400">تم التفعيل أو استلام الطلب!</h3>
@@ -461,21 +422,21 @@ export function AutoSubscriptionModal() {
               </div>
               <div className="flex justify-between border-t border-border/40 pt-2 mt-2 text-xs">
                 <span className="text-muted-foreground">تاريخ الاشتراك:</span>
-                <span className="font-semibold text-foreground">{activationDate}</span>
+                <span className="font-semibold text-foreground rx-nums">{activationDate}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">تاريخ انتهاء الصلاحية:</span>
-                <span className="font-semibold text-gold">{expirationDate}</span>
+                <span className="font-semibold text-gold rx-nums">{expirationDate}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Button onClick={handleSendEmailReceipt} variant="gold" className="w-full py-2.5 text-sm font-bold">
+              <Button onClick={handleSendEmailReceipt} className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rx-press">
                 إرسال نسخة من الفاتورة لبريدي الإلكتروني
               </Button>
               <Button 
                 onClick={() => setIsOpen(false)} 
-                className="w-full py-2.5 text-sm font-semibold bg-secondary hover:bg-secondary/80 text-foreground"
+                className="w-full py-2.5 text-sm font-semibold bg-secondary hover:bg-secondary/80 text-foreground rx-press"
               >
                 تصفح الموقع بالكامل الآن
               </Button>
