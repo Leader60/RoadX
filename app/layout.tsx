@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Amiri } from "next/font/google";
 import { GeistMono } from "geist/font/mono";
 import { AppWrapper } from "@/components/app-wrapper";
+import Script from "next/script"; // استيراد مكون المخطوطات من Next.js
 import "./globals.css";
 
 const amiri = Amiri({
@@ -12,9 +13,9 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: "Made with App Studio",
-  description: "RoadX — منصة الموسيقى العالمية",
-    generator: 'v0.app'
+  title: "RoadX — منصة الموسيقى العالمية",
+  description: "استمتع بأقوى قوائم الأغاني والميزات الحصرية مع حساب Premium",
+  generator: 'v0.app'
 };
 
 export const viewport: Viewport = {
@@ -32,6 +33,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" className={`bg-background ${amiri.variable} ${GeistMono.variable}`}>
+      <head>
+        {/* استدعاء Pi SDK رسمياً لتهيئة اتصال المتصفح والمحفظة */}
+        <Script 
+          src="https://sdk.minepi.com/pi-sdk.js" 
+          strategy="beforeInteractive" 
+        />
+      </head>
       <body className="font-sans">
         <AppWrapper>{children}</AppWrapper>
       </body>
