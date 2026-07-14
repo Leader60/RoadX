@@ -13,7 +13,7 @@ type ModalStep = "FORM" | "PAYING" | "SUCCESS";
 
 export function AutoSubscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { sdk } = usePiAuth(); // سياق المصادقة المهيأ مسبقاً في مشروعك
+  const { sdk } = usePiAuth();
   const { toast } = useRoadX();
 
   const [step, setStep] = useState<ModalStep>("FORM");
@@ -56,62 +56,63 @@ export function AutoSubscriptionModal() {
   const initiatePiPayment = async () => {
     const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
 
-    // التأكد التام من أننا داخل متصفح Pi وأن الـ SDK متاح للعمل
+    // 1. التحقق من البيئة
     if (!globalPi) {
-      console.log("خارج متصفح Pi، الانتقال لمحاكاة الدفع...");
+      toast?.("تنبيه: أنت خارج متصفح Pi. جاري تشغيل المحاكاة.");
       setTimeout(async () => {
-        await saveSubscriptionToDatabase("MOCK_TX_ID_123456", "guest_uid", "guest");
+        await saveSubscriptionToDatabase("MOCK_TX_123", "guest_uid", "guest");
       }, 1500);
       return;
     }
 
-    // حد أقصى للانتظار (5 ثوانٍ) في حال حدوث تجميد بالمتصفح، لنعود لصفحة البيانات ولا تعلق الشاشة
+    // زيادة مؤقت الأمان إلى 10 ثوانٍ لإتاحة وقت أطول للاستجابة بالهواتف البطيئة
     const authTimeout = setTimeout(() => {
-      toast?.("لم تستجب محفظة Pi. يرجى المحاولة لاحقاً أو التحقق من اتصالك.");
+      toast?.("انتهت مهلة الاتصال. يرجى التحقق من إعدادات الرابط في Pi Developer Portal.");
       setIsSubmitting(false);
       setStep("FORM");
-    }, 5000);
+    }, 10000);
 
     try {
-      // الاستعانة بالمستخدم الموثق من الـ Context لتجنب تهيئة SDK مزدوجة تسبب التجمد
-      let currentUser = sdk?.state?.user || null;
-
-      if (!currentUser) {
-        console.log("المستخدم غير موثق، جاري المصادقة السريعة...");
-        const scopes = ["username", "payments"];
-        
-        // استدعاء المصادقة مباشرة دون إعادة استدعاء Pi.init لمنع التعارض
-        const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
-          fetch("/api/roadx/incomplete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ payment: onIncompletePaymentFound }),
-          });
-        });
-        currentUser = authResult.user;
+      // 2. محاولة إعادة تهيئة الـ SDK بشكل آمن ومحمي
+      try {
+        await globalPi.init({ version: "2.0", sandbox: false });
+      } catch (initError: any) {
+        // نتجاوز الخطأ إذا كانت المكتبة مهيأة مسبقاً
+        console.log("الـ SDK مهيأ مسبقاً أو حدث تنبيه بالتهيئة:", initError);
       }
 
-      // إلغاء مؤقت الأمان فور نجاح المصادقة والانتقال لطلب الدفع
+      toast?.("جاري طلب المصادقة من خوادم Pi...");
+
+      // 3. طلب المصادقة المباشر
+      const scopes = ["username", "payments"];
+      const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
+        console.log("دفعة معلقة تم العثور عليها:", onIncompletePaymentFound);
+        fetch("/api/roadx/incomplete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payment: onIncompletePaymentFound }),
+        });
+      });
+
+      // إلغاء مؤقت الأمان فور نجاح المصادقة وقبل الانتقال للخطوة التالية
       clearTimeout(authTimeout);
 
-      if (!currentUser) {
-        throw new Error("لم نتمكن من جلب بيانات حساب Pi.");
+      if (!authResult || !authResult.user) {
+        throw new Error("لم ترجع خوادم Pi بيانات صالحة للمستخدم.");
       }
 
-      const uid = currentUser.uid;
-      const username = currentUser.username;
+      const uid = authResult.user.uid;
+      const username = authResult.user.username;
+
+      toast?.(`تم التوثيق بنجاح: @${username}. جاري فتح المحفظة...`);
 
       const paymentData = {
         amount: 0.1,
         memo: "الاشتراك السنوي في منصة RoadX Premium",
-        metadata: { 
-          fullName, 
-          email, 
-          uid: uid 
-        },
+        metadata: { fullName, email, uid },
       };
 
-      // استدعاء نافذة المحفظة الحقيقية لإتمام العملية
+      // 4. استدعاء المحفظة للدفع الفعلي
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -125,7 +126,7 @@ export function AutoSubscriptionModal() {
               body: JSON.stringify({ paymentId }),
             });
           } catch (e) {
-            console.error("فشل الموافقة من السيرفر:", e);
+            console.error(e);
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
@@ -146,22 +147,23 @@ export function AutoSubscriptionModal() {
           }
         },
         onCancel: (paymentId: string) => {
-          toast?.("تم إلغاء عملية الدفع.");
+          toast?.("تم إلغاء الدفع.");
           setIsSubmitting(false);
           setStep("FORM");
         },
         onError: (error: any, paymentId?: string) => {
-          console.error("خطأ الدفع:", error);
-          toast?.("فشلت عملية الدفع. يرجى مراجعة الرصيد والمحاولة مجدداً.");
+          toast?.(`خطأ في الدفع: ${error?.message || JSON.stringify(error)}`);
           setIsSubmitting(false);
           setStep("FORM");
         }
       });
 
-    } catch (err) {
+    } catch (err: any) {
       clearTimeout(authTimeout);
-      console.error("خطأ تقني أثناء محاولة الاتصال:", err);
-      toast?.("فشل الاتصال بالمحفظة. يرجى المحاولة مجدداً.");
+      console.error("خطأ المصادقة التقني:", err);
+      // إظهار نص الخطأ الفعلي القادم من المتصفح لمعرفة المشكلة بدقة
+      const errorMessage = err?.message || JSON.stringify(err) || "فشل الاتصال";
+      toast?.(`فشل الاتصال الفعلي: ${errorMessage}`);
       setIsSubmitting(false);
       setStep("FORM");
     }
