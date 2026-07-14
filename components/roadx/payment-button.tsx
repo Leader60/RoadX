@@ -13,7 +13,7 @@ type ModalStep = "FORM" | "PAYING" | "SUCCESS";
 
 export function AutoSubscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
-  const { sdk } = usePiAuth();
+  const { sdk } = usePiAuth(); // سياق المصادقة المهيأ مسبقاً في مشروعك
   const { toast } = useRoadX();
 
   const [step, setStep] = useState<ModalStep>("FORM");
@@ -53,39 +53,34 @@ export function AutoSubscriptionModal() {
 
   if (!isOpen) return null;
 
-  const piUser = sdk?.state?.user || null;
-
   const initiatePiPayment = async () => {
     const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
 
-    // 1. التحقق الفعلي من المتصفح (لتجنب تعليق الشاشة في المتصفحات العادية)
-    const isPiBrowser = typeof window !== "undefined" && 
-      (navigator.userAgent.toLowerCase().includes("pibrowser") || (window as any).Pi);
-
-    if (!isPiBrowser) {
-      console.log("خارج متصفح Pi الفعلي، تشغيل وضع المحاكاة...");
+    // التأكد التام من أننا داخل متصفح Pi وأن الـ SDK متاح للعمل
+    if (!globalPi) {
+      console.log("خارج متصفح Pi، الانتقال لمحاكاة الدفع...");
       setTimeout(async () => {
         await saveSubscriptionToDatabase("MOCK_TX_ID_123456", "guest_uid", "guest");
-      }, 2000);
+      }, 1500);
       return;
     }
 
-    // إعداد مؤقت أمان لإلغاء التعليق في حال عدم استجابة المحفظة
+    // حد أقصى للانتظار (5 ثوانٍ) في حال حدوث تجميد بالمتصفح، لنعود لصفحة البيانات ولا تعلق الشاشة
     const authTimeout = setTimeout(() => {
-      toast?.("استغرقت الاستجابة وقتاً طويلاً. تأكد من فتح الرابط داخل تطبيق Pi Browser الرسمي.");
+      toast?.("لم تستجب محفظة Pi. يرجى المحاولة لاحقاً أو التحقق من اتصالك.");
       setIsSubmitting(false);
       setStep("FORM");
-    }, 8000);
+    }, 5000);
 
     try {
-      // 2. تهيئة الـ SDK (مهم جداً لمنع تعليق الاتصال)
-      await globalPi.init({ version: "2.0", sandbox: false });
+      // الاستعانة بالمستخدم الموثق من الـ Context لتجنب تهيئة SDK مزدوجة تسبب التجمد
+      let currentUser = sdk?.state?.user || null;
 
-      let currentUser = piUser;
-
-      // 3. محاولة مصادقة المستخدم
       if (!currentUser) {
+        console.log("المستخدم غير موثق، جاري المصادقة السريعة...");
         const scopes = ["username", "payments"];
+        
+        // استدعاء المصادقة مباشرة دون إعادة استدعاء Pi.init لمنع التعارض
         const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
           fetch("/api/roadx/incomplete", {
             method: "POST",
@@ -96,11 +91,15 @@ export function AutoSubscriptionModal() {
         currentUser = authResult.user;
       }
 
-      // إلغاء مؤقت الأمان فور نجاح الاتصال بالمحفظة للبدء بالدفع
+      // إلغاء مؤقت الأمان فور نجاح المصادقة والانتقال لطلب الدفع
       clearTimeout(authTimeout);
 
-      const uid = currentUser?.uid || "unknown_uid";
-      const username = currentUser?.username || "unknown_user";
+      if (!currentUser) {
+        throw new Error("لم نتمكن من جلب بيانات حساب Pi.");
+      }
+
+      const uid = currentUser.uid;
+      const username = currentUser.username;
 
       const paymentData = {
         amount: 0.1,
@@ -112,7 +111,7 @@ export function AutoSubscriptionModal() {
         },
       };
 
-      // 4. استدعاء نافذة الدفع الفعلي
+      // استدعاء نافذة المحفظة الحقيقية لإتمام العملية
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -126,7 +125,7 @@ export function AutoSubscriptionModal() {
               body: JSON.stringify({ paymentId }),
             });
           } catch (e) {
-            console.error(e);
+            console.error("فشل الموافقة من السيرفر:", e);
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
@@ -140,10 +139,10 @@ export function AutoSubscriptionModal() {
             if (response.ok) {
               await saveSubscriptionToDatabase(txid, uid, username);
             } else {
-              await saveSubscriptionToDatabase(txid || "TX_SUCCESS_LOCAL", uid, username);
+              await saveSubscriptionToDatabase(txid || "TX_SUCCESS", uid, username);
             }
           } catch (e) {
-            await saveSubscriptionToDatabase(txid || "TX_SUCCESS_LOCAL", uid, username);
+            await saveSubscriptionToDatabase(txid || "TX_SUCCESS", uid, username);
           }
         },
         onCancel: (paymentId: string) => {
@@ -152,8 +151,8 @@ export function AutoSubscriptionModal() {
           setStep("FORM");
         },
         onError: (error: any, paymentId?: string) => {
-          console.error(error);
-          toast?.("حدث خطأ أثناء الاتصال بالمحفظة.");
+          console.error("خطأ الدفع:", error);
+          toast?.("فشلت عملية الدفع. يرجى مراجعة الرصيد والمحاولة مجدداً.");
           setIsSubmitting(false);
           setStep("FORM");
         }
@@ -161,8 +160,8 @@ export function AutoSubscriptionModal() {
 
     } catch (err) {
       clearTimeout(authTimeout);
-      console.error(err);
-      toast?.("تأكد من تسجيل الدخول والمحاولة من داخل تطبيق Pi Browser.");
+      console.error("خطأ تقني أثناء محاولة الاتصال:", err);
+      toast?.("فشل الاتصال بالمحفظة. يرجى المحاولة مجدداً.");
       setIsSubmitting(false);
       setStep("FORM");
     }
@@ -179,7 +178,7 @@ export function AutoSubscriptionModal() {
     
     setTimeout(() => {
       initiatePiPayment();
-    }, 500);
+    }, 300);
   };
 
   const saveSubscriptionToDatabase = async (transactionId: string, uid: string, username: string) => {
@@ -211,7 +210,7 @@ export function AutoSubscriptionModal() {
   };
 
   const handleSendEmailReceipt = () => {
-    const displayUsername = piUser?.username || "user";
+    const displayUsername = sdk?.state?.user?.username || "user";
     const mailtoLink = `mailto:${email},rdx.prv@gmail.com?subject=تأكيد اشتراك RoadX Premium&body=${encodeURIComponent(
       `أهلاً بك في عائلة RoadX!\n\nتم تفعيل حسابك Premium بنجاح بعد إتمام الدفع عبر شبكة Pi.\n\nتفاصيل الاشتراك السنوي وعقدك المالي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- حساب Pi: @${displayUsername}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 0.1 Pi سنوياً\n\nتصفح ممتع لكافة الأغاني والمحتوى الحصري بدون أي حظر!\n\nإدارة منصة RoadX`
     )}`;
@@ -336,7 +335,7 @@ export function AutoSubscriptionModal() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">حساب الباي:</span>
-                <span className="font-semibold text-gold">@{piUser?.username || "حساب موثق"}</span>
+                <span className="font-semibold text-gold">@{sdk?.state?.user?.username || "حساب موثق"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">قيمة الدفع السنوي:</span>
