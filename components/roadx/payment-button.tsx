@@ -53,40 +53,51 @@ export function AutoSubscriptionModal() {
 
   if (!isOpen) return null;
 
-  // جلب بيانات المستخدم الفعلي من سياق المصادقة
   const piUser = sdk?.state?.user || null;
 
   const initiatePiPayment = async () => {
     const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
 
-    // 1. التحقق من وجود المتصفح والـ SDK الخاص بـ Pi
-    if (!globalPi) {
-      console.log("خارج متصفح Pi: تشغيل وضع المحاكاة للتجربة.");
+    // 1. التحقق الفعلي من المتصفح (لتجنب تعليق الشاشة في المتصفحات العادية)
+    const isPiBrowser = typeof window !== "undefined" && 
+      (navigator.userAgent.toLowerCase().includes("pibrowser") || (window as any).Pi);
+
+    if (!isPiBrowser) {
+      console.log("خارج متصفح Pi الفعلي، تشغيل وضع المحاكاة...");
       setTimeout(async () => {
         await saveSubscriptionToDatabase("MOCK_TX_ID_123456", "guest_uid", "guest");
       }, 2000);
       return;
     }
 
+    // إعداد مؤقت أمان لإلغاء التعليق في حال عدم استجابة المحفظة
+    const authTimeout = setTimeout(() => {
+      toast?.("استغرقت الاستجابة وقتاً طويلاً. تأكد من فتح الرابط داخل تطبيق Pi Browser الرسمي.");
+      setIsSubmitting(false);
+      setStep("FORM");
+    }, 8000);
+
     try {
+      // 2. تهيئة الـ SDK (مهم جداً لمنع تعليق الاتصال)
+      await globalPi.init({ version: "2.0", sandbox: false });
+
       let currentUser = piUser;
 
-      // 2. إذا لم يكن المستخدم قد قام بالمصادقة وتوثيق حسابه بعد، نقوم بمصادقته الآن فوراً
+      // 3. محاولة مصادقة المستخدم
       if (!currentUser) {
-        toast?.("جاري الاتصال بحساب Pi الخاص بك...");
         const scopes = ["username", "payments"];
-        
         const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
-          // معالجة المدفوعات المعلقة إن وجدت لضمان عدم تعليق الحساب
           fetch("/api/roadx/incomplete", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ payment: onIncompletePaymentFound }),
           });
         });
-        
         currentUser = authResult.user;
       }
+
+      // إلغاء مؤقت الأمان فور نجاح الاتصال بالمحفظة للبدء بالدفع
+      clearTimeout(authTimeout);
 
       const uid = currentUser?.uid || "unknown_uid";
       const username = currentUser?.username || "unknown_user";
@@ -101,7 +112,7 @@ export function AutoSubscriptionModal() {
         },
       };
 
-      // 3. استدعاء بوابة الدفع الحقيقية وفتح محفظة Pi بشكل إجباري ومباشر
+      // 4. استدعاء نافذة الدفع الفعلي
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -115,7 +126,7 @@ export function AutoSubscriptionModal() {
               body: JSON.stringify({ paymentId }),
             });
           } catch (e) {
-            console.error("خطأ موافقة السيرفر:", e);
+            console.error(e);
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
@@ -129,7 +140,6 @@ export function AutoSubscriptionModal() {
             if (response.ok) {
               await saveSubscriptionToDatabase(txid, uid, username);
             } else {
-              // حماية مضافة لتأكيد التفعيل عند نجاح المعاملة في البلوكشين وتأخر السيرفر
               await saveSubscriptionToDatabase(txid || "TX_SUCCESS_LOCAL", uid, username);
             }
           } catch (e) {
@@ -137,21 +147,22 @@ export function AutoSubscriptionModal() {
           }
         },
         onCancel: (paymentId: string) => {
-          toast?.("تم إلغاء عملية الدفع من قبل المستخدم.");
+          toast?.("تم إلغاء عملية الدفع.");
           setIsSubmitting(false);
           setStep("FORM");
         },
         onError: (error: any, paymentId?: string) => {
-          console.error("خطأ أثناء الدفع:", error);
-          toast?.("فشلت عملية الدفع. يرجى التأكد من رصيد محفظتك وإعادة المحاولة.");
+          console.error(error);
+          toast?.("حدث خطأ أثناء الاتصال بالمحفظة.");
           setIsSubmitting(false);
           setStep("FORM");
         }
       });
 
     } catch (err) {
-      console.error("خطأ في المصادقة أو استدعاء الدفع:", err);
-      toast?.("يرجى منح صلاحية الوصول للحساب لإتمام الدفع.");
+      clearTimeout(authTimeout);
+      console.error(err);
+      toast?.("تأكد من تسجيل الدخول والمحاولة من داخل تطبيق Pi Browser.");
       setIsSubmitting(false);
       setStep("FORM");
     }
@@ -191,7 +202,7 @@ export function AutoSubscriptionModal() {
         body: JSON.stringify(subscriptionData),
       });
     } catch (error) {
-      console.error("فشل إرسال البيانات لقاعدة البيانات:", error);
+      console.error(error);
     }
 
     sessionStorage.setItem("roadx_user_choice", "premium_active");
