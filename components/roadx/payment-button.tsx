@@ -71,16 +71,16 @@ export function AutoSubscriptionModal() {
       toast?.("يرجى ملء الحقول الإجبارية أولاً.");
       return;
     }
-    // ننتقل لصفحة اختيار طريقة الدفع بعد تعبئة كامل البيانات
     setStep("PAYMENT_METHOD");
   };
 
   // 1. طريقة الدفع الأوتوماتيكية (عبر متصفح وبوابة Pi الرسمية)
   const initiatePiPayment = async () => {
-    const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
+    // محاولة جلب مكتبة window.Pi بأكثر من طريقة للتأكد من تحميلها بالكامل داخل متصفح Pi
+    const globalPi = typeof window !== "undefined" ? (window.Pi || (window as any).Pi) : null;
 
     if (!globalPi) {
-      toast?.("تنبيه: أنت خارج متصفح Pi. جاري تفعيل المحاكاة التجريبية.");
+      toast?.("تنبيه: لم يتم العثور على Pi SDK في المتصفح. جاري تشغيل المحاكاة.");
       setStep("AUTO_PAYING");
       setTimeout(async () => {
         await saveSubscriptionToDatabase("MOCK_TX_123", "guest_uid", "guest");
@@ -91,23 +91,28 @@ export function AutoSubscriptionModal() {
     setStep("AUTO_PAYING");
 
     try {
+      // تهيئة الـ SDK
       try {
         await globalPi.init({ version: "2.0", sandbox: false });
       } catch (e) {
-        console.log("الـ SDK مهيأ مسبقاً");
+        console.log("الـ SDK مهيأ مسبقاً بنجاح.");
       }
 
       const scopes = ["username", "payments"];
-      const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
-        fetch("/api/roadx/incomplete", {
+      
+      // دالة المصادقة وتسجيل الدخول
+      const authResult = await globalPi.authenticate(scopes, async (incompletePayment: any) => {
+        console.log("تم العثور على دفعة غير مكتملة:", incompletePayment);
+        // إبلاغ السيرفر بالدفعة غير المكتملة لمعالجتها
+        await fetch("/api/roadx/incomplete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ payment: onIncompletePaymentFound }),
+          body: JSON.stringify({ payment: incompletePayment }),
         });
       });
 
       if (!authResult || !authResult.user) {
-        throw new Error("لم ترجع خوادم Pi بيانات مستخدم صالحة.");
+        throw new Error("فشلت عملية التحقق من حساب Pi الخاص بك.");
       }
 
       const uid = authResult.user.uid;
@@ -119,6 +124,7 @@ export function AutoSubscriptionModal() {
         metadata: { fullName, email, uid },
       };
 
+      // إنشاء المعاملة المالية الفعلية وفتح المحفظة للمستخدم
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -126,13 +132,14 @@ export function AutoSubscriptionModal() {
       }, {
         onReadyForServerApproval: async (paymentId: string) => {
           try {
-            await fetch("/api/roadx/approve-payment", {
+            const res = await fetch("/api/roadx/approve-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ paymentId }),
             });
+            if (!res.ok) throw new Error("فشل السيرفر في الموافقة على الدفعة.");
           } catch (e) {
-            console.error(e);
+            console.error("خطأ في اعتماد الدفعة على السيرفر:", e);
           }
         },
         onReadyForServerCompletion: async (paymentId: string, txid: string) => {
@@ -153,19 +160,18 @@ export function AutoSubscriptionModal() {
           }
         },
         onCancel: (paymentId: string) => {
-          toast?.("تم إلغاء الدفع الأوتوماتيكي.");
+          toast?.("تم إلغاء عملية الدفع.");
           setStep("PAYMENT_METHOD");
         },
         onError: (error: any) => {
-          toast?.(`خطأ في الدفع التلقائي: ${error?.message || "يرجى المحاولة مجدداً"}`);
+          toast?.(`خطأ أثناء الدفع: ${error?.message || "يرجى المحاولة مرة أخرى"}`);
           setStep("PAYMENT_METHOD");
         }
       });
 
     } catch (err: any) {
       console.error(err);
-      toast?.(`تعذر تفعيل البوابة التلقائية: ${err?.message || "قد يكون السبب الخطوة 3 في حساب المطور"}`);
-      // نعيده لصفحة الخيارات ليتمكن من اختيار الدفع اليدوي كبديل فوري
+      toast?.(`خطأ غير متوقع: ${err?.message || "تأكد من فتح الرابط داخل Pi Browser"}`);
       setStep("PAYMENT_METHOD");
     }
   };
@@ -206,7 +212,7 @@ export function AutoSubscriptionModal() {
         body: JSON.stringify(subscriptionData),
       });
     } catch (error) {
-      console.error(error);
+      console.error("فشل حفظ البيانات في قاعدة البيانات:", error);
     }
 
     sessionStorage.setItem("roadx_user_choice", "premium_active");
@@ -318,7 +324,6 @@ export function AutoSubscriptionModal() {
             </div>
 
             <div className="space-y-3">
-              {/* خيار 1: دفع أوتوماتيكي سريع */}
               <button
                 onClick={initiatePiPayment}
                 className="w-full p-4 rounded-xl border border-gold/40 bg-navy-deep/50 hover:bg-navy-deep text-right flex items-center justify-between transition-all group"
@@ -330,7 +335,6 @@ export function AutoSubscriptionModal() {
                 <span className="text-xl">⚡</span>
               </button>
 
-              {/* خيار 2: دفع يدوي مباشر P2P */}
               <button
                 onClick={() => setStep("MANUAL_INSTRUCTIONS")}
                 className="w-full p-4 rounded-xl border border-border bg-secondary/10 hover:bg-secondary/30 text-right flex items-center justify-between transition-all"
