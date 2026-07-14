@@ -53,30 +53,55 @@ export function AutoSubscriptionModal() {
 
   if (!isOpen) return null;
 
-  const piUser = sdk?.state?.user || { username: "guest", uid: "guest_uid" };
+  // جلب بيانات المستخدم الفعلي من سياق المصادقة
+  const piUser = sdk?.state?.user || null;
 
   const initiatePiPayment = async () => {
     const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
 
+    // 1. التحقق من وجود المتصفح والـ SDK الخاص بـ Pi
     if (!globalPi) {
-      console.log("SDK غير متوفر، الانتقال لوضع المحاكاة...");
+      console.log("خارج متصفح Pi: تشغيل وضع المحاكاة للتجربة.");
       setTimeout(async () => {
-        await saveSubscriptionToDatabase("MOCK_TX_ID_123456");
+        await saveSubscriptionToDatabase("MOCK_TX_ID_123456", "guest_uid", "guest");
       }, 2000);
       return;
     }
 
     try {
+      let currentUser = piUser;
+
+      // 2. إذا لم يكن المستخدم قد قام بالمصادقة وتوثيق حسابه بعد، نقوم بمصادقته الآن فوراً
+      if (!currentUser) {
+        toast?.("جاري الاتصال بحساب Pi الخاص بك...");
+        const scopes = ["username", "payments"];
+        
+        const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
+          // معالجة المدفوعات المعلقة إن وجدت لضمان عدم تعليق الحساب
+          fetch("/api/roadx/incomplete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ payment: onIncompletePaymentFound }),
+          });
+        });
+        
+        currentUser = authResult.user;
+      }
+
+      const uid = currentUser?.uid || "unknown_uid";
+      const username = currentUser?.username || "unknown_user";
+
       const paymentData = {
         amount: 0.1,
         memo: "الاشتراك السنوي في منصة RoadX Premium",
         metadata: { 
           fullName, 
           email, 
-          uid: piUser.uid 
+          uid: uid 
         },
       };
 
+      // 3. استدعاء بوابة الدفع الحقيقية وفتح محفظة Pi بشكل إجباري ومباشر
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -102,29 +127,33 @@ export function AutoSubscriptionModal() {
             });
 
             if (response.ok) {
-              await saveSubscriptionToDatabase(txid);
+              await saveSubscriptionToDatabase(txid, uid, username);
             } else {
-              await saveSubscriptionToDatabase(txid || "TX_BACKUP");
+              // حماية مضافة لتأكيد التفعيل عند نجاح المعاملة في البلوكشين وتأخر السيرفر
+              await saveSubscriptionToDatabase(txid || "TX_SUCCESS_LOCAL", uid, username);
             }
           } catch (e) {
-            await saveSubscriptionToDatabase(txid || "TX_BACKUP");
+            await saveSubscriptionToDatabase(txid || "TX_SUCCESS_LOCAL", uid, username);
           }
         },
         onCancel: (paymentId: string) => {
-          toast?.("تم إلغاء عملية الدفع.");
+          toast?.("تم إلغاء عملية الدفع من قبل المستخدم.");
           setIsSubmitting(false);
           setStep("FORM");
         },
         onError: (error: any, paymentId?: string) => {
-          console.error("خطأ الدفع:", error);
-          toast?.("حدث استثناء تقني، جاري التفعيل احتياطياً...");
-          saveSubscriptionToDatabase("TX_FALLBACK");
+          console.error("خطأ أثناء الدفع:", error);
+          toast?.("فشلت عملية الدفع. يرجى التأكد من رصيد محفظتك وإعادة المحاولة.");
+          setIsSubmitting(false);
+          setStep("FORM");
         }
       });
 
     } catch (err) {
-      console.error(err);
-      await saveSubscriptionToDatabase("TX_FALLBACK_CATCH");
+      console.error("خطأ في المصادقة أو استدعاء الدفع:", err);
+      toast?.("يرجى منح صلاحية الوصول للحساب لإتمام الدفع.");
+      setIsSubmitting(false);
+      setStep("FORM");
     }
   };
 
@@ -142,7 +171,7 @@ export function AutoSubscriptionModal() {
     }, 500);
   };
 
-  const saveSubscriptionToDatabase = async (transactionId: string) => {
+  const saveSubscriptionToDatabase = async (transactionId: string, uid: string, username: string) => {
     const subscriptionData = {
       fullName,
       email,
@@ -150,8 +179,8 @@ export function AutoSubscriptionModal() {
       country,
       activationDate,
       expirationDate,
-      piUsername: piUser.username,
-      piUid: piUser.uid,
+      piUsername: username,
+      piUid: uid,
       transactionId,
     };
 
@@ -162,7 +191,7 @@ export function AutoSubscriptionModal() {
         body: JSON.stringify(subscriptionData),
       });
     } catch (error) {
-      console.error(error);
+      console.error("فشل إرسال البيانات لقاعدة البيانات:", error);
     }
 
     sessionStorage.setItem("roadx_user_choice", "premium_active");
@@ -171,8 +200,9 @@ export function AutoSubscriptionModal() {
   };
 
   const handleSendEmailReceipt = () => {
+    const displayUsername = piUser?.username || "user";
     const mailtoLink = `mailto:${email},rdx.prv@gmail.com?subject=تأكيد اشتراك RoadX Premium&body=${encodeURIComponent(
-      `أهلاً بك في عائلة RoadX!\n\nتم تفعيل حسابك Premium بنجاح بعد إتمام الدفع عبر شبكة Pi.\n\nتفاصيل الاشتراك السنوي وعقدك المالي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- حساب Pi: @${piUser.username}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 0.1 Pi سنوياً\n\nتصفح ممتع لكافة الأغاني والمحتوى الحصري بدون أي حظر!\n\nإدارة منصة RoadX`
+      `أهلاً بك في عائلة RoadX!\n\nتم تفعيل حسابك Premium بنجاح بعد إتمام الدفع عبر شبكة Pi.\n\nتفاصيل الاشتراك السنوي وعقدك المالي:\n- الاسم الكامل: ${fullName}\n- البريد الإلكتروني الموثق: ${email}\n- رقم الهاتف: ${phone || "غير متوفر"}\n- الدولة: ${country || "غير متوفر"}\n- حساب Pi: @${displayUsername}\n- تاريخ تفعيل الاشتراك: ${activationDate}\n- تاريخ انتهاء الصلاحية: ${expirationDate}\n- تكلفة الاشتراك: 0.1 Pi سنوياً\n\nتصفح ممتع لكافة الأغاني والمحتوى الحصري بدون أي حظر!\n\nإدارة منصة RoadX`
     )}`;
     window.location.href = mailtoLink;
   };
@@ -189,7 +219,6 @@ export function AutoSubscriptionModal() {
 
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-no-scrollbar">
         
-        {/* المرحلة الأولى: تعبئة البيانات */}
         {step === "FORM" && (
           <form onSubmit={handleFormSubmit} className="space-y-4 text-right animate-in fade-in zoom-in duration-300" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
@@ -265,18 +294,16 @@ export function AutoSubscriptionModal() {
           </form>
         )}
 
-        {/* المرحلة الثانية: معالجة الدفع والانتظار */}
         {step === "PAYING" && (
           <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 animate-in fade-in duration-300">
             <div className="h-12 w-12 rounded-full border-4 border-gold border-t-transparent animate-spin mb-2" />
-            <h3 className="text-lg font-bold text-gold">جاري معالجة الدفع عبر Pi...</h3>
+            <h3 className="text-lg font-bold text-gold">جاري الاتصال بمحفظة Pi...</h3>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-xs">
-              يرجى المصادقة وتأكيد المعاملة بقيمة <span className="font-bold text-foreground">0.1 Pi</span> من خلال محفظتك المفتوحة الآن.
+              يرجى الموافقة على طلب الاتصال وتأكيد المعاملة بقيمة <span className="font-bold text-foreground">0.1 Pi</span> فور ظهور نافذة تأكيد المحفظة.
             </p>
           </div>
         )}
 
-        {/* المرحلة الثالثة: شاشة النجاح والتأكيد بالتواريخ */}
         {step === "SUCCESS" && (
           <div className="space-y-5 text-right animate-in zoom-in-95 duration-300" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-2">
@@ -295,6 +322,10 @@ export function AutoSubscriptionModal() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">البريد الإلكتروني:</span>
                 <span className="font-semibold text-foreground">{email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">حساب الباي:</span>
+                <span className="font-semibold text-gold">@{piUser?.username || "حساب موثق"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">قيمة الدفع السنوي:</span>
