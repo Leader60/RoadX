@@ -91,9 +91,9 @@ export function AutoSubscriptionModal() {
     setStep("AUTO_PAYING");
 
     try {
-      // تهيئة الـ SDK
+      // تهيئة الـ SDK - تم حذف await هنا لمنع تعليق الصفحة
       try {
-        await globalPi.init({ version: "2.0", sandbox: false });
+        globalPi.init({ version: "2.0", sandbox: false });
       } catch (e) {
         console.log("الـ SDK مهيأ مسبقاً بنجاح.");
       }
@@ -266,7 +266,7 @@ export function AutoSubscriptionModal() {
               <div>
                 <label className="block text-xs font-semibold text-gold mb-1">البريد الإلكتروني *</label>
                 <input
-                  type="email"
+                  type="type"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -375,7 +375,7 @@ export function AutoSubscriptionModal() {
             <div className="bg-secondary/20 border border-border p-3 rounded-xl text-xs space-y-1.5 leading-relaxed">
               <p>1. انسخ عنوان محفظتنا الشخصية بالأسفل.</p>
               <p>2. افتح تطبيق <span className="text-gold">Pi Wallet</span> وانقل القيمة (0.1 Pi) يدوياً.</p>
-              <p>3. بعد نجاح التحويل، انسخ رمز المعاملة (TxID) وضعه في الحقل أدناه لتأكيد طلبك.</p>
+              <p>3. بعد نجاح التحويل، انسخ رمز المعاملة (TxID) وضعه in الحقل أدناه لتأكيد طلبك.</p>
             </div>
 
             <div className="space-y-2">
