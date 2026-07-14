@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { usePiAuth } from "@/contexts/pi-auth-context";
 import { useRoadX } from "@/contexts/roadx-context";
 import { usePurchase } from "@/lib/pi-payment"; 
-import { Button } from "./ui";
 import { IconSparkle } from "./icons";
 
 // عنوان المحفظة الشخصية لاستقبال الدفع اليدوي الاحتياطي
@@ -20,36 +19,40 @@ interface PaymentButtonProps {
 
 // زر الاشتراك الرئيسي (يطلق حدث لفتح المودال)
 export function SubscriptionButton({ onClick, className, children }: PaymentButtonProps) {
-  const handlePress = () => {
+  const handlePress = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (onClick) onClick();
     window.dispatchEvent(new CustomEvent("open-subscription-modal"));
   };
 
   return (
-    <Button
+    <button
       onClick={handlePress}
-      className={`px-6 py-2.5 font-bold rounded-xl shadow-lg rx-press flex items-center gap-2 bg-gold text-gold-foreground hover:opacity-90 ${className || ""}`}
+      type="button"
+      className={`px-6 py-2.5 font-bold rounded-xl shadow-lg rx-press flex items-center justify-center gap-2 bg-gold text-gold-foreground hover:opacity-90 transition-all ${className || ""}`}
     >
       <IconSparkle size={18} />
       {children || "اشترك في Premium الآن"}
-    </Button>
+    </button>
   );
 }
 
 // زر الدفع (يطلق حدث لفتح المودال)
 export function PaymentButton({ onClick, className, children }: PaymentButtonProps) {
-  const handlePress = () => {
+  const handlePress = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (onClick) onClick();
     window.dispatchEvent(new CustomEvent("open-subscription-modal"));
   };
 
   return (
-    <Button
+    <button
       onClick={handlePress}
-      className={`px-6 py-2.5 font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl rx-press ${className || ""}`}
+      type="button"
+      className={`px-6 py-2.5 font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl rx-press transition-all ${className || ""}`}
     >
       {children || "دفع 0.1 Pi"}
-    </Button>
+    </button>
   );
 }
 
@@ -124,6 +127,10 @@ export function AutoSubscriptionModal() {
     toast?.("جاري تحضير بوابة الدفع الآمنة...");
 
     try {
+      if (typeof makePurchase !== "function") {
+        throw new Error("بوابة الدفع SDK غير متوفرة حالياً.");
+      }
+
       const result = await makePurchase("roadx-xp1j"); 
 
       if (result && result.ok) {
@@ -197,10 +204,10 @@ export function AutoSubscriptionModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 rx-fade-in">
-      {/* خلفية معتمة تستخدم متغير navy-deep المعرّف لديك */}
+      {/* خلفية معتمة */}
       <div className="absolute inset-0 bg-navy-deep/90 backdrop-blur-md" onClick={() => setIsOpen(false)} />
 
-      {/* المودال يعتمد على محاذاة وتنسيقات CSS المخصصة مثل rx-pop و rx-no-scrollbar */}
+      {/* المودال */}
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-pop rx-no-scrollbar">
         
         {step === "FORM" && (
@@ -229,7 +236,7 @@ export function AutoSubscriptionModal() {
               <div>
                 <label className="block text-xs font-semibold text-gold mb-1">البريد الإلكتروني *</label>
                 <input
-                  type="email"
+                  type="type"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -263,9 +270,12 @@ export function AutoSubscriptionModal() {
             </div>
 
             <div className="space-y-2 pt-2">
-              <Button type="submit" className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground hover:opacity-90 rx-press">
+              <button 
+                type="submit" 
+                className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press transition-all"
+              >
                 متابعة واختيار طريقة الدفع
-              </Button>
+              </button>
 
               <button
                 type="button"
@@ -333,7 +343,7 @@ export function AutoSubscriptionModal() {
 
         {step === "MANUAL_INSTRUCTIONS" && (
           <div className="space-y-4 text-right" dir="rtl">
-            <h3 className="text-lg font-bold text-gold text-center">خطوات الدفع اليدوي المباشس</h3>
+            <h3 className="text-lg font-bold text-gold text-center">خطوات الدفع اليدوي المباشر</h3>
             
             <div className="bg-secondary/20 border border-border p-3 rounded-xl text-xs space-y-1.5 leading-relaxed">
               <p>1. انسخ عنوان محفظتنا الشخصية بالأسفل.</p>
@@ -342,7 +352,7 @@ export function AutoSubscriptionModal() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-gold">عنوان محفظة الاستلام الخاص بنا:</label>
+              <label className="block text-xs font-semibold text-gold">عنوان محفظة الاستلاف الخاص بنا:</label>
               <div className="flex gap-1.5">
                 <input
                   type="text"
@@ -374,17 +384,17 @@ export function AutoSubscriptionModal() {
               </div>
 
               <div className="flex gap-2">
-                <Button 
+                <button 
                   type="submit" 
                   disabled={isSubmitting} 
-                  className="flex-1 py-2.5 text-xs font-bold bg-gold text-gold-foreground rx-press"
+                  className="flex-1 py-2.5 text-xs font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press disabled:opacity-50 transition-all"
                 >
                   {isSubmitting ? "جاري الإرسال..." : "تأكيد وإرسال للتفعيل"}
-                </Button>
+                </button>
                 <button
                   type="button"
                   onClick={() => setStep("PAYMENT_METHOD")}
-                  className="px-4 py-2 text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border rounded-xl rx-press"
+                  className="px-4 py-2 text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground border border-border rounded-xl rx-press transition-all"
                 >
                   رجوع
                 </button>
@@ -431,15 +441,18 @@ export function AutoSubscriptionModal() {
             </div>
 
             <div className="space-y-2">
-              <Button onClick={handleSendEmailReceipt} className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rx-press">
+              <button 
+                onClick={handleSendEmailReceipt} 
+                className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press transition-all"
+              >
                 إرسال نسخة من الفاتورة لبريدي الإلكتروني
-              </Button>
-              <Button 
+              </button>
+              <button 
                 onClick={() => setIsOpen(false)} 
-                className="w-full py-2.5 text-sm font-semibold bg-secondary hover:bg-secondary/80 text-foreground rx-press"
+                className="w-full py-2.5 text-sm font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl rx-press transition-all"
               >
                 تصفح الموقع بالكامل الآن
-              </Button>
+              </button>
             </div>
           </div>
         )}
