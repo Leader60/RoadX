@@ -91,15 +91,15 @@ export function AutoSubscriptionModal() {
       setStep("SUCCESS");
     } catch (error) {
       console.error("فشل حفظ البيانات:", error);
-      toast?.("خطأ في الاتصال بالخادم، يرجى التواصل معنا.");
+      toast?.("خطأ في الاتصال بالخادم.");
     }
     setIsSubmitting(false);
   };
 
   const initiatePiPayment = async () => {
     setStep("AUTO_PAYING");
-    
-    // محاولة الاتصال المباشر بـ Pi SDK
+    toast?.("جاري الاتصال بالمحفظة...");
+
     const Pi = (window as any).Pi;
     if (!Pi) {
       toast?.("خطأ: لم يتم العثور على محفظة Pi. تأكد أنك تستخدم Pi Browser.");
@@ -133,13 +133,81 @@ export function AutoSubscriptionModal() {
     }
   };
 
-  // باقي الدوال (handleFormSubmit, handleVerifyManualPayment, إلخ) تظل كما هي في ملفك الأصلي...
-  // تأكد من دمج بقية الدوال هنا عند اللصق.
+  const handleCopyWallet = () => {
+    navigator.clipboard.writeText(YOUR_PERSONAL_PI_WALLET);
+    setCopied(true);
+    toast?.("تم نسخ عنوان المحفظة!");
+    setTimeout(() => setCopied(false), 3000);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !email) {
+      toast?.("يرجى ملء الحقول الإجبارية.");
+      return;
+    }
+    setStep("PAYMENT_METHOD");
+  };
+
+  const handleVerifyManualPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!txId.trim()) {
+      toast?.("يرجى إدخال رمز المعاملة.");
+      return;
+    }
+    setIsSubmitting(true);
+    await saveSubscriptionToDatabase(txId, "p2p_user", "manual_member");
+  };
+
+  const handleSendEmailReceipt = () => {
+    window.location.href = `mailto:${email},rdx.prv@gmail.com?subject=تأكيد اشتراك RoadX Premium&body=${encodeURIComponent(`الاسم: ${fullName}\nالتاريخ: ${activationDate}\nالطلب: تم استقبال طلبك بنجاح.`)}`;
+  };
+
+  const handleContinueFree = () => {
+    sessionStorage.setItem("roadx_user_choice", "free_guest");
+    setIsOpen(false);
+  };
 
   return (
-    // هنا ضع محتوى الـ JSX (واجهة المودال) من ملفك الأصلي كما هو تماماً
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 rx-fade-in">
-        {/* ... (بقية واجهة المودال من ملفك الأصلي) ... */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-navy-deep/90 backdrop-blur-md" onClick={() => setIsOpen(false)} />
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl">
+        {step === "FORM" && (
+          <form onSubmit={handleFormSubmit} className="space-y-4" dir="rtl">
+            <h3 className="text-xl font-bold text-gold text-center">الاشتراك في RoadX Premium</h3>
+            <input type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full p-2 rounded-lg border bg-secondary/30" placeholder="الاسم الكامل" />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-2 rounded-lg border bg-secondary/30" placeholder="البريد الإلكتروني" />
+            <button type="submit" className="w-full py-2.5 bg-gold text-gold-foreground rounded-xl font-bold">متابعة</button>
+            <button type="button" onClick={handleContinueFree} className="w-full py-2 text-xs text-muted-foreground">المتابعة كحساب مجاني</button>
+          </form>
+        )}
+        {step === "PAYMENT_METHOD" && (
+          <div className="space-y-4" dir="rtl">
+            <h3 className="text-lg font-bold text-gold text-center">اختر طريقة الدفع</h3>
+            <button onClick={initiatePiPayment} className="w-full p-4 rounded-xl border border-gold bg-navy-deep/50">دفع أوتوماتيكي (⚡)</button>
+            <button onClick={() => setStep("MANUAL_INSTRUCTIONS")} className="w-full p-4 rounded-xl border border-border bg-secondary/10">تحويل يدوي (P2P)</button>
+          </div>
+        )}
+        {step === "AUTO_PAYING" && (
+          <div className="text-center p-8"><h3 className="text-lg font-bold text-gold">جاري الاتصال بـ Pi Wallet...</h3></div>
+        )}
+        {step === "MANUAL_INSTRUCTIONS" && (
+            <div className="space-y-4" dir="rtl">
+                <h3 className="text-lg font-bold text-gold text-center">خطوات الدفع اليدوي</h3>
+                <p className="text-xs">حول 0.1 Pi إلى: {YOUR_PERSONAL_PI_WALLET}</p>
+                <input type="text" value={txId} onChange={(e) => setTxId(e.target.value)} className="w-full p-2 border" placeholder="أدخل رمز المعاملة (TxID)" />
+                <button onClick={handleVerifyManualPayment} className="w-full py-2 bg-gold text-white rounded-xl">تأكيد الدفع</button>
+                <button onClick={() => setStep("PAYMENT_METHOD")} className="w-full py-2 bg-secondary rounded-xl">رجوع</button>
+            </div>
+        )}
+        {step === "SUCCESS" && (
+            <div className="text-center space-y-4" dir="rtl">
+                <h3 className="text-xl font-bold text-emerald-400">تمت العملية بنجاح!</h3>
+                <button onClick={handleSendEmailReceipt} className="w-full py-2 bg-gold rounded-xl">إرسال الفاتورة لبريدي</button>
+                <button onClick={() => setIsOpen(false)} className="w-full py-2 bg-secondary rounded-xl">إغلاق</button>
+            </div>
+        )}
+      </div>
     </div>
   );
 }
