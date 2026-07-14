@@ -53,40 +53,76 @@ export function AutoSubscriptionModal() {
 
   if (!isOpen) return null;
 
-  const initiatePiPayment = async () => {
-    const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
+  const piUser = sdk?.state?.user || null;
 
-    // 1. التحقق من البيئة
-    if (!globalPi) {
-      toast?.("تنبيه: أنت خارج متصفح Pi. جاري تشغيل المحاكاة.");
-      setTimeout(async () => {
-        await saveSubscriptionToDatabase("MOCK_TX_123", "guest_uid", "guest");
+  // دالة مخصصة لاختبار مدى استجابة SDK الخاص بـ Pi في خلفية المتصفح دون تجميد الواجهة
+  const checkPiResponsiveness = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
+      if (!globalPi) return resolve(false);
+
+      // نضع مهلة ثانية واحدة فقط للاستجابة المبدئية
+      const timeout = setTimeout(() => {
+        resolve(false);
       }, 1500);
+
+      try {
+        // اختبار تهيئة خفيفة للتأكد من جاهزية الكائن للرد
+        globalPi.init({ version: "2.0", sandbox: false })
+          .then(() => {
+            clearTimeout(timeout);
+            resolve(true);
+          })
+          .catch(() => {
+            // إذا كان مهيأ مسبقاً سيمر هنا أيضاً بنجاح
+            clearTimeout(timeout);
+            resolve(true);
+          });
+      } catch (e) {
+        clearTimeout(timeout);
+        resolve(false);
+      }
+    });
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !email) {
+      toast?.("يرجى ملء الحقول الإجبارية أولاً.");
       return;
     }
 
-    // زيادة مؤقت الأمان إلى 10 ثوانٍ لإتاحة وقت أطول للاستجابة بالهواتف البطيئة
-    const authTimeout = setTimeout(() => {
-      toast?.("انتهت مهلة الاتصال. يرجى التحقق من إعدادات الرابط في Pi Developer Portal.");
+    setIsSubmitting(true);
+    toast?.("جاري التحقق من الاتصال بالبوابة الأمنية لـ Pi...");
+
+    // فحص الاستجابة في الخلفية والواجهة لا تزال ثابتة
+    const isPiReady = await checkPiResponsiveness();
+
+    if (!isPiReady) {
+      // إذا فشل الفحص، نبقيه في نفس الصفحة ونعرض له رسالة واضحة بدلاً من إدخاله في حلقة انتظار مفرغة
+      toast?.("فشل الاتصال بـ Pi SDK. يرجى التأكد من تطابق الدومين في منصة المطورين (develop.pi).");
       setIsSubmitting(false);
-      setStep("FORM");
-    }, 10000);
+      return;
+    }
+
+    // إذا نجح الفحص المسبق، ننتقل الآن بأمان لصفحة الانتظار والطلب الفعلي للمحفظة
+    setStep("PAYING");
+    
+    setTimeout(() => {
+      initiatePiPayment();
+    }, 300);
+  };
+
+  const initiatePiPayment = async () => {
+    const globalPi = typeof window !== "undefined" ? (window as any).Pi : null;
+    if (!globalPi) return;
 
     try {
-      // 2. محاولة إعادة تهيئة الـ SDK بشكل آمن ومحمي
-      try {
-        await globalPi.init({ version: "2.0", sandbox: false });
-      } catch (initError: any) {
-        // نتجاوز الخطأ إذا كانت المكتبة مهيأة مسبقاً
-        console.log("الـ SDK مهيأ مسبقاً أو حدث تنبيه بالتهيئة:", initError);
-      }
-
-      toast?.("جاري طلب المصادقة من خوادم Pi...");
-
-      // 3. طلب المصادقة المباشر
+      let currentUser = piUser;
       const scopes = ["username", "payments"];
+
+      // طلب المصادقة الفعلي
       const authResult = await globalPi.authenticate(scopes, (onIncompletePaymentFound: any) => {
-        console.log("دفعة معلقة تم العثور عليها:", onIncompletePaymentFound);
         fetch("/api/roadx/incomplete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -94,17 +130,9 @@ export function AutoSubscriptionModal() {
         });
       });
 
-      // إلغاء مؤقت الأمان فور نجاح المصادقة وقبل الانتقال للخطوة التالية
-      clearTimeout(authTimeout);
-
-      if (!authResult || !authResult.user) {
-        throw new Error("لم ترجع خوادم Pi بيانات صالحة للمستخدم.");
-      }
-
-      const uid = authResult.user.uid;
-      const username = authResult.user.username;
-
-      toast?.(`تم التوثيق بنجاح: @${username}. جاري فتح المحفظة...`);
+      currentUser = authResult.user;
+      const uid = currentUser.uid;
+      const username = currentUser.username;
 
       const paymentData = {
         amount: 0.1,
@@ -112,7 +140,7 @@ export function AutoSubscriptionModal() {
         metadata: { fullName, email, uid },
       };
 
-      // 4. استدعاء المحفظة للدفع الفعلي
+      // فتح محفظة الدفع الرسمية للباي
       globalPi.createPayment({
         amount: paymentData.amount,
         memo: paymentData.memo,
@@ -147,40 +175,23 @@ export function AutoSubscriptionModal() {
           }
         },
         onCancel: (paymentId: string) => {
-          toast?.("تم إلغاء الدفع.");
+          toast?.("تم إلغاء عملية الدفع.");
           setIsSubmitting(false);
           setStep("FORM");
         },
         onError: (error: any, paymentId?: string) => {
-          toast?.(`خطأ في الدفع: ${error?.message || JSON.stringify(error)}`);
+          toast?.(`حدث خطأ أثناء معالجة الدفع: ${error?.message || "يرجى المحاولة مجدداً"}`);
           setIsSubmitting(false);
           setStep("FORM");
         }
       });
 
     } catch (err: any) {
-      clearTimeout(authTimeout);
-      console.error("خطأ المصادقة التقني:", err);
-      // إظهار نص الخطأ الفعلي القادم من المتصفح لمعرفة المشكلة بدقة
-      const errorMessage = err?.message || JSON.stringify(err) || "فشل الاتصال";
-      toast?.(`فشل الاتصال الفعلي: ${errorMessage}`);
+      console.error(err);
+      toast?.(`فشلت المصادقة: ${err?.message || "تأكد من فتح الرابط داخل Pi Browser المحدث"}`);
       setIsSubmitting(false);
       setStep("FORM");
     }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fullName || !email) {
-      toast?.("يرجى ملء الحقول الإجبارية أولاً.");
-      return;
-    }
-    setIsSubmitting(true);
-    setStep("PAYING");
-    
-    setTimeout(() => {
-      initiatePiPayment();
-    }, 300);
   };
 
   const saveSubscriptionToDatabase = async (transactionId: string, uid: string, username: string) => {
@@ -291,8 +302,8 @@ export function AutoSubscriptionModal() {
             </div>
 
             <div className="space-y-2 pt-2">
-              <Button type="submit" variant="gold" className="w-full py-2.5 text-sm font-bold">
-                اشترك الآن
+              <Button type="submit" disabled={isSubmitting} variant="gold" className="w-full py-2.5 text-sm font-bold">
+                {isSubmitting ? "جاري التحقق..." : "اشترك الآن"}
               </Button>
 
               <button
