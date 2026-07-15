@@ -18,8 +18,38 @@ interface PiAuthContextType {
 const PiAuthContext = createContext<PiAuthContextType | undefined>(undefined);
 const SANDBOX = true; // Testnet
 
-function onIncompletePaymentFound(payment: any) {
-  console.log("⚠️ دفعة سابقة غير مكتملة:", payment);
+// ✅ إكمال أي دفعة قديمة عالقة تلقائياً عبر السيرفر، بدل ما تمنع أي دفعة جديدة
+async function onIncompletePaymentFound(payment: any) {
+  console.log("⚠️ دفعة سابقة غير مكتملة، جاري إكمالها تلقائياً:", payment);
+  try {
+    const paymentId = payment?.identifier;
+    const txid = payment?.transaction?.txid;
+
+    if (!paymentId) {
+      console.warn("⚠️ لا يوجد معرف دفعة (paymentId) لإكمالها.");
+      return;
+    }
+
+    if (txid) {
+      // الدفعة وصلت لمرحلة وجود معاملة على البلوكشين — أكملها
+      const res = await fetch("/api/roadx/payments/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, txid }),
+      });
+      console.log(res.ok ? "✅ تم إكمال الدفعة القديمة بنجاح" : "❌ فشل إكمال الدفعة القديمة");
+    } else {
+      // لا يوجد txid بعد — على الأقل اعتمدها حتى لا تبقى عالقة بانتظار موافقة السيرفر
+      const res = await fetch("/api/roadx/payments/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId }),
+      });
+      console.log(res.ok ? "✅ تم اعتماد الدفعة القديمة" : "❌ فشل اعتماد الدفعة القديمة");
+    }
+  } catch (err) {
+    console.error("❌ خطأ أثناء معالجة الدفعة القديمة:", err);
+  }
 }
 
 export function PiAuthProvider({ children }: { children: ReactNode }) {
@@ -37,7 +67,12 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
     try {
-      const auth = await Pi.authenticate(["username", "payments"], onIncompletePaymentFound);
+      const auth = await Promise.race([
+        Pi.authenticate(["username", "payments"], onIncompletePaymentFound),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("انتهت مهلة المصادقة (10 ثواني) — قد تكون هناك دفعة عالقة لم تُعالَج.")), 10000)
+        ),
+      ]) as any;
       const piUser: PiUser = { uid: auth.user.uid, username: auth.user.username };
       setUser(piUser);
       setIsAuthenticated(true);
@@ -72,7 +107,6 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           new Promise((_, reject) => setTimeout(() => reject(new Error("انتهت مهلة الاتصال بـ Pi.")), 8000)),
         ]);
         setAuthMessage("جاهز");
-        // لا نستدعي authenticate() هنا — تصير فقط عند لمسة المستخدم الفعلية (ضغطة زر الدفع)
       } catch (err: any) {
         setHasError(true);
         setAuthMessage(err?.message || "فشل تهيئة Pi SDK");
