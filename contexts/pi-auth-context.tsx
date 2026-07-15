@@ -53,7 +53,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const initAndAuth = async () => {
+    const initSdk = async () => {
       let attempts = 0;
       while (!(window as any).Pi && attempts < 50) {
         await new Promise((r) => setTimeout(r, 100));
@@ -71,8 +71,8 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
           (window as any).Pi.init({ version: "2.0", sandbox: SANDBOX }),
           new Promise((_, reject) => setTimeout(() => reject(new Error("انتهت مهلة الاتصال بـ Pi.")), 8000)),
         ]);
-        // ✅ مصادقة تلقائية بصمت فور التهيئة — بدون انتظار ضغطة زر
-        await authenticate();
+        setAuthMessage("جاهز");
+        // لا نستدعي authenticate() هنا — تصير فقط عند لمسة المستخدم الفعلية (ضغطة زر الدفع)
       } catch (err: any) {
         setHasError(true);
         setAuthMessage(err?.message || "فشل تهيئة Pi SDK");
@@ -80,7 +80,7 @@ export function PiAuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setIsLoading(false);
       }
     };
-    initAndAuth();
+    initSdk();
     return () => { cancelled = true; };
   }, []);
 
