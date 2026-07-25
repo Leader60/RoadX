@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
+// تعريف بنية الطلب القادم لتجنب أخطاء TypeScript (Implicit Any)
+interface SubscribeRequestBody {
+  fullName?: string;
+  email?: string;
+  piUid?: string;
+  durationDays?: number;
+}
+
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
   token: process.env.KV_REST_API_TOKEN!,
@@ -8,7 +16,7 @@ const redis = new Redis({
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
+    const data: SubscribeRequestBody = await request.json();
     const { fullName, email, piUid, durationDays = 30 } = data;
 
     if (!fullName || !email || !piUid) {
@@ -18,7 +26,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // حساب تاريخ الانتهاء بناءً على عدد أيام الاشتراك (30 يوم افتراضياً)
     const expiration = new Date();
     expiration.setDate(expiration.getDate() + Number(durationDays));
 
@@ -31,14 +38,13 @@ export async function POST(request: Request) {
       expirationDate: expiration.toISOString(),
     };
 
-    // التخزين في Redis باستخدام المعرف piUid
     await redis.set(`subscription:${piUid}`, subscriptionPayload);
 
     return NextResponse.json(
       { success: true, message: "تم تفعيل الاشتراك بنجاح" },
       { status: 200 }
     );
-  } catch (error: unknown) {
+  } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "خطأ غير معروف";
     return NextResponse.json(
