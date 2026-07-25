@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
-// تعريف بنية بيانات الاشتراك لمنع أخطاء الـ Type Checker
 interface SubscriptionRecord {
   status: string;
   expirationDate?: string;
@@ -22,10 +21,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ active: false });
     }
 
-    // جلب البيانات مع تحديد النوع الصريح لـ Redis
     const sub = await redis.get<SubscriptionRecord>(`subscription:${uid}`);
 
-    // الفحص الآمن لخصائص البيانات
     if (sub && typeof sub === "object" && sub.status === "active") {
       return NextResponse.json({
         active: true,
@@ -34,7 +31,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ active: false });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Subscription status fetch error:", error);
     return NextResponse.json({ active: false }, { status: 500 });
   }
