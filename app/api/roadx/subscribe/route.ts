@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 
-// تعريف بنية الطلب القادم لتجنب أخطاء TypeScript (Implicit Any)
-interface SubscribeRequestBody {
-  fullName?: string;
-  email?: string;
-  piUid?: string;
-  durationDays?: number;
-}
-
 const redis = new Redis({
   url: process.env.KV_REST_API_URL!,
   token: process.env.KV_REST_API_TOKEN!,
@@ -16,8 +8,8 @@ const redis = new Redis({
 
 export async function POST(request: Request) {
   try {
-    const data: SubscribeRequestBody = await request.json();
-    const { fullName, email, piUid, durationDays = 30 } = data;
+    const data = await request.json();
+    const { fullName, email, piUid, durationDays } = data || {};
 
     if (!fullName || !email || !piUid) {
       return NextResponse.json(
@@ -26,8 +18,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const days = typeof durationDays === "number" ? durationDays : 30;
     const expiration = new Date();
-    expiration.setDate(expiration.getDate() + Number(durationDays));
+    expiration.setDate(expiration.getDate() + days);
 
     const subscriptionPayload = {
       fullName,
@@ -44,11 +37,9 @@ export async function POST(request: Request) {
       { success: true, message: "تم تفعيل الاشتراك بنجاح" },
       { status: 200 }
     );
-  } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "خطأ غير معروف";
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "خطأ داخلي: " + errorMessage },
+      { error: "خطأ داخلي: " + (err?.message || "Internal Error") },
       { status: 500 }
     );
   }
