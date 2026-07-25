@@ -1,31 +1,38 @@
 import { NextResponse } from "next/server";
+
 import { Redis } from "@upstash/redis";
 
+
+
 const redis = new Redis({
+
   url: process.env.KV_REST_API_URL!,
+
   token: process.env.KV_REST_API_TOKEN!,
+
 });
 
+
+
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const uid = searchParams.get("uid");
 
-    if (!uid) {
-      return NextResponse.json({ active: false });
-    }
+  const { searchParams } = new URL(request.url);
 
-    const sub = await redis.get<any>(`subscription:${uid}`);
+  const uid = searchParams.get("uid");
 
-    if (sub && sub.status === "active") {
-      return NextResponse.json({
-        active: true,
-        expirationDate: sub.expirationDate || null,
-      });
-    }
+  if (!uid) return NextResponse.json({ active: false });
 
-    return NextResponse.json({ active: false });
-  } catch (err) {
-    return NextResponse.json({ active: false }, { status: 500 });
+
+
+  const sub = await redis.get<any>(`subscription:${uid}`);
+
+  if (sub && sub.status === "active") {
+
+    return NextResponse.json({ active: true, expirationDate: sub.expirationDate });
+
   }
-}
+
+  return NextResponse.json({ active: false });
+
+} 
+
