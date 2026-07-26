@@ -8,7 +8,7 @@ import { IconSparkle } from "./icons";
 const YOUR_PERSONAL_PI_WALLET = "GBR3WU2DAHS5WNNYU7OPMSTF7OWSMWPPOR2IOU752HSM6S4L3PTSPBUH";
 const SUBSCRIPTION_AMOUNT = 1; // 1 Pi سنوياً
 
-type ModalStep = "FORM" | "PAYMENT_METHOD" | "AUTO_PAYING" | "MANUAL_INSTRUCTIONS" | "SUCCESS" | "ERROR";
+type ModalStep = "USERNAME_CHECK" | "FORM" | "PAYMENT_METHOD" | "AUTO_PAYING" | "MANUAL_INSTRUCTIONS" | "SUCCESS" | "ERROR";
 
 interface PaymentButtonProps {
   onClick?: () => void;
@@ -50,7 +50,9 @@ export function AutoSubscriptionModal() {
   const { checkStatus } = useSubscriptionStatus();
   const { isAuthenticated, authenticate, isLoading: authLoading, user } = usePiAuth();
 
-  const [step, setStep] = useState<ModalStep>("FORM");
+  const [step, setStep] = useState<ModalStep>("USERNAME_CHECK");
+  const [usernameInput, setUsernameInput] = useState("");
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -83,7 +85,7 @@ export function AutoSubscriptionModal() {
     return () => window.removeEventListener("open-subscription-modal", handleOpenModal);
   }, []);
 
-  // التحقق من اشتراك سابق فور توفر بيانات المستخدم (بعد المصادقة)
+  // التحقق من اشتراك سابق فور توفر بيانات المستخدم (بعد المصادقة) — يبقى كطبقة احتياطية إضافية
   useEffect(() => {
     if (!user) return;
     checkStatus().then((status) => {
@@ -95,6 +97,31 @@ export function AutoSubscriptionModal() {
   }, [user]);
 
   if (!isOpen) return null;
+
+  const handleCheckUsername = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usernameInput.trim()) {
+      toast?.("يرجى إدخال اسم المستخدم في Pi Network.");
+      return;
+    }
+    setCheckingUsername(true);
+    try {
+      const res = await fetch(`/api/roadx/check-username?username=${encodeURIComponent(usernameInput.trim())}`);
+      const data = await res.json();
+      if (data.active) {
+        sessionStorage.setItem("roadx_user_choice", "premium_active");
+        if (data.expirationDate) sessionStorage.setItem("roadx_expiry", data.expirationDate);
+        toast?.("مرحباً بعودتك! اشتراكك فعّال بالفعل.");
+        setIsOpen(false);
+      } else {
+        setStep("FORM");
+      }
+    } catch {
+      setStep("FORM");
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
 
   const handleCopyWallet = () => {
     navigator.clipboard.writeText(YOUR_PERSONAL_PI_WALLET);
@@ -118,7 +145,6 @@ export function AutoSubscriptionModal() {
     toast?.("جاري تحضير بوابة الدفع الآمنة...");
 
     try {
-      // نستخدم القيمة المُرجَعة مباشرة من authenticate() — لا نعتمد على الـ state
       let currentUser = user;
       if (!isAuthenticated || !currentUser) {
         currentUser = await authenticate();
@@ -157,7 +183,7 @@ export function AutoSubscriptionModal() {
     }
     setIsSubmitting(true);
     toast?.("جاري تسجيل طلب التفعيل اليدوي...");
-    await saveSubscriptionToDatabase(txId, `manual_${Date.now()}`, user?.uid || "manual_user", user?.username || "manual_user");
+    await saveSubscriptionToDatabase(txId, `manual_${Date.now()}`, user?.uid || "manual_user", user?.username || usernameInput || "manual_user");
   };
 
   const saveSubscriptionToDatabase = async (txid: string, paymentId: string, uid: string, username: string) => {
@@ -210,6 +236,34 @@ export function AutoSubscriptionModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 rx-fade-in">
       <div className="absolute inset-0 bg-navy-deep/90 backdrop-blur-md" onClick={() => setIsOpen(false)} />
       <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/30 bg-card p-6 text-right shadow-2xl transition-all rx-pop rx-no-scrollbar">
+
+        {step === "USERNAME_CHECK" && (
+          <form onSubmit={handleCheckUsername} className="space-y-4 text-right" dir="rtl">
+            <div className="flex flex-col items-center gap-2 text-center mb-4">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep text-gold rx-pulse">
+                <IconSparkle size={24} />
+              </span>
+              <h3 className="text-xl font-bold rx-gold-text">تحقق من اشتراكك</h3>
+              <p className="text-xs text-muted-foreground">أدخل اسم مستخدمك في Pi Network للتأكد من حالة اشتراكك</p>
+            </div>
+            <input
+              type="text"
+              required
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              className="w-full rounded-lg border border-border bg-secondary/30 p-2 text-sm text-foreground focus:border-gold focus:outline-none"
+              placeholder="اسم المستخدم في Pi (Pi Username)"
+              dir="ltr"
+            />
+            <button
+              type="submit"
+              disabled={checkingUsername}
+              className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press transition-all disabled:opacity-50"
+            >
+              {checkingUsername ? "جاري التحقق..." : "متابعة"}
+            </button>
+          </form>
+        )}
 
         {step === "FORM" && (
           <form onSubmit={handleFormSubmit} className="space-y-4 text-right" dir="rtl">
