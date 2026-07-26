@@ -47,29 +47,36 @@ export function AppHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-40 grid grid-cols-3 items-center border-b border-gold/25 bg-background/95 px-4 py-3 backdrop-blur rx-safe-top">
-      <div className="flex items-center justify-start h-full">
-        <img 
-          src="/roadx-logo.png" 
-          alt="RoadX" 
-          className="h-11 w-auto object-contain my-auto self-center block" 
-        />
-      </div>
-        <div className="text-center leading-tight">
-          <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
-          <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
-        </div>
-        <div className="flex items-center justify-end gap-2">
-          {count !== null && (
-            <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
-              {count} مشترك
-            </span>
-          )}
-          <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
-            <IconMenu size={24} />
-          </IconButton>
-        </div>
-      </header>
+  <header className="sticky top-0 z-40 grid grid-cols-3 items-center border-b border-gold/25 bg-background/95 px-4 py-3 backdrop-blur rx-safe-top h-[70px]">
+    
+    {/* 1. الجانب الأيمن (القائمة والمشتركين): متمركز شاقولياً */}
+    <div className="flex items-center justify-start gap-2 h-full">
+      <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
+        <IconMenu size={24} />
+      </IconButton>
+      {count !== null && (
+        <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+          {count} مشترك
+        </span>
+      )}
+    </div>
+
+    {/* 2. المنتصف (النص): متمركز شاقولياً بفضل layout الهيدر */}
+    <div className="text-center leading-tight">
+      <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
+      <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
+    </div>
+
+    {/* 3. الجانب الأيسر (الشعار): تم إضافة classes لتوسطه شاقولياً */}
+    <div className="flex items-center justify-end h-full">
+      <img 
+        src="/roadx-logo.png" 
+        alt="RoadX" 
+        className="h-10 w-auto object-contain my-auto self-center block" 
+      />
+    </div>
+
+  </header>
 
       {/* Drawer */}
       {open && (
