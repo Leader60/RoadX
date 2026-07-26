@@ -7,8 +7,8 @@ import { Card, Button, SectionTitle, cx, inputClass } from "./ui";
 import { IconMail, IconSend, IconMusicNote } from "./icons";
 
 const CONTACTS = [
-  { label: "البريد الإلكتروني", value: "hello@roadx.music" },
-  { label: "الدعم", value: "support@roadx.music" },
+  { label: "البريد الإلكتروني", value: "rdx.prv@gmail.com" },
+  { label: "الدعم", value: "roadx.info@gmail.com" },
   { label: "أوقات الرد", value: "يومياً من ٩ صباحاً حتى ٦ مساءً" },
 ];
 
@@ -63,7 +63,7 @@ export function ContactView() {
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="البريد الإلكتروني (اختياري)"
+          placeholder="البريد الإلكتروني"
           className={inputClass}
         />
         <textarea
