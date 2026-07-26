@@ -53,11 +53,11 @@ export function AppHeader({
         </div>
         <div className="text-center leading-tight">
           <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
-          <div className="text-[10px] text-muted-foreground">منصة الموسيقى العالمية</div>
+          <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
         </div>
         <div className="flex items-center justify-end gap-2">
           {count !== null && (
-            <span className="text-[10px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+            <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
               {count} مشترك
             </span>
           )}
