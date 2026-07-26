@@ -52,7 +52,7 @@ export function AppHeader({
    <img 
     src="/roadx-logo.png" 
     alt="RoadX" 
-    className="h-8 w-auto object-contain my-auto self-center block" 
+    className="h-6 w-auto object-contain my-auto self-center block" 
     />
     </div>
         <div className="text-center leading-tight">
