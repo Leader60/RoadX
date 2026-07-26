@@ -6,6 +6,21 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
+function toKuwaitTime(isoString?: string): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  return date.toLocaleString("ar-KW", {
+    timeZone: "Asia/Kuwait",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get("secret");
@@ -19,7 +34,10 @@ export async function GET(request: Request) {
     const subscribers = await Promise.all(
       keys.map(async (key) => {
         const data = await redis.get<any>(key);
-        return data;
+        return {
+          ...data,
+          savedAt_kuwait: toKuwaitTime(data?.savedAt),
+        };
       })
     );
 
