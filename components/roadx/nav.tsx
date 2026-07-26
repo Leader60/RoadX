@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NAV_ITEMS, type TabId } from "@/lib/roadx/data";
 import { cx, IconButton } from "./ui";
 import {
@@ -31,6 +31,14 @@ export function AppHeader({
   onNavigate: (t: TabId) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/roadx/subscriber-count")
+      .then((r) => r.json())
+      .then((d) => setCount(d.count))
+      .catch(() => {});
+  }, []);
 
   const go = (t: TabId) => {
     onNavigate(t);
@@ -47,7 +55,12 @@ export function AppHeader({
           <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
           <div className="text-[10px] text-muted-foreground">منصة الموسيقى العالمية</div>
         </div>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-2">
+          {count !== null && (
+            <span className="text-[10px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+              {count} مشترك
+            </span>
+          )}
           <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
             <IconMenu size={24} />
           </IconButton>
