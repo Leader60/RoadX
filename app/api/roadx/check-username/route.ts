@@ -8,7 +8,7 @@ const redis = new Redis({
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const username = searchParams.get("username")?.trim().toLowerCase();
+  const username = searchParams.get("username")?.trim().toLowerCase().replace(/^@/, "");
 
   if (!username) {
     return NextResponse.json({ active: false });
@@ -18,7 +18,8 @@ export async function GET(request: Request) {
     const keys = await redis.keys("subscription:*");
     for (const key of keys) {
       const data = await redis.get<any>(key);
-      if (data?.piUsername?.trim().toLowerCase() === username && data?.status === "active") {
+      const storedUsername = data?.piUsername?.trim().toLowerCase().replace(/^@/, "");
+      if (storedUsername === username && data?.status === "active") {
         return NextResponse.json({ active: true, expirationDate: data.expirationDate });
       }
     }
