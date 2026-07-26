@@ -12,7 +12,6 @@ import {
   IconStack,
   IconInfo,
   IconMail,
-  IconMusicNote,
 } from "./icons";
 
 const TAB_ICONS: Record<TabId, typeof IconHome> = {
@@ -42,9 +41,7 @@ export function AppHeader({
     <>
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-gold/25 bg-background/95 px-4 py-3 backdrop-blur rx-safe-top">
         <div className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/50 bg-navy-deep text-gold">
-            <IconMusicNote size={20} />
-          </span>
+          <img src="/roadx-logo.png" alt="RoadX" className="h-9 w-auto object-contain" />
           <div className="leading-tight">
             <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
             <div className="text-[10px] text-muted-foreground">منصة الموسيقى العالمية</div>
