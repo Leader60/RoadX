@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { useRoadX } from "@/contexts/roadx-context";
 import { cleanStr } from "@/lib/roadx/data";
@@ -17,7 +16,6 @@ export function ContactView() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-
   const submit = () => {
     const n = cleanStr(name, 80).trim();
     const m = cleanStr(message, 800).trim();
@@ -30,7 +28,6 @@ export function ContactView() {
     setMessage("");
     pushToast("تم إرسال رسالتك، شكراً لتواصلك", "success");
   };
-
   return (
     <div className="rx-fade-in flex flex-col gap-5 px-4 py-6 pb-6">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -42,7 +39,6 @@ export function ContactView() {
           يسعدنا سماع رأيك واقتراحاتك حول أحدث الإصدارات الموسيقية.
         </p>
       </div>
-
       <Card className="flex flex-col divide-y divide-border">
         {CONTACTS.map((c) => (
           <div key={c.label} className="flex items-center justify-between gap-3 p-3.5">
@@ -51,7 +47,6 @@ export function ContactView() {
           </div>
         ))}
       </Card>
-
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="mb-1">أرسل رسالة</SectionTitle>
         <input
@@ -63,7 +58,7 @@ export function ContactView() {
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="البريد الإلكتروني"
+          placeholder="البريد الإلكتروني (اختياري)"
           className={inputClass}
         />
         <textarea
@@ -77,7 +72,6 @@ export function ContactView() {
           <IconSend size={18} /> إرسال
         </Button>
       </Card>
-
       <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
         <IconMusicNote size={14} className="text-gold" />
         RoadX — منصة الموسيقى العالمية
