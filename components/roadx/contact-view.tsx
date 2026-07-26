@@ -11,23 +11,38 @@ const CONTACTS = [
   { label: "أوقات الرد", value: "يومياً من ٩ صباحاً حتى ٦ مساءً" },
 ];
 
+// تحقق بسيط من صيغة البريد الإلكتروني
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function ContactView() {
   const { pushToast } = useRoadX();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+
   const submit = () => {
     const n = cleanStr(name, 80).trim();
+    const e = cleanStr(email, 120).trim();
     const m = cleanStr(message, 800).trim();
+
     if (n.length < 2 || m.length < 3) {
       pushToast("يرجى إكمال الاسم والرسالة", "error");
       return;
     }
+
+    if (!e || !isValidEmail(e)) {
+      pushToast("يرجى إدخال بريد إلكتروني صحيح للرد عليك", "error");
+      return;
+    }
+
     setName("");
     setEmail("");
     setMessage("");
     pushToast("تم إرسال رسالتك، شكراً لتواصلك", "success");
   };
+
   return (
     <div className="rx-fade-in flex flex-col gap-5 px-4 py-6 pb-6">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -48,7 +63,7 @@ export function ContactView() {
         ))}
       </Card>
       <Card className="flex flex-col gap-3 p-4">
-        <SectionTitle className="mb-1">أرسل رسالة</SectionTitle>
+        <SectionTitle className="mb-1">تواصل معنا</SectionTitle>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -56,9 +71,11 @@ export function ContactView() {
           className={inputClass}
         />
         <input
+          type="email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="البريد الإلكتروني (اختياري)"
+          placeholder="البريد الإلكتروني *"
           className={inputClass}
         />
         <textarea
