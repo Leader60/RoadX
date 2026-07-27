@@ -241,8 +241,8 @@ export function AutoSubscriptionModal() {
           <form onSubmit={handleCheckUsername} className="space-y-4 text-right" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
               <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep p-1.5 rx-pulse">
-              <img src="/roadx-logo.png" alt="RoadX" className="h-full w-full object-contain" />
-            </span>
+                <img src="/roadx-logo.png" alt="RoadX" className="h-full w-full object-contain" />
+              </span>
               <h3 className="text-xl font-bold rx-gold-text">تحقق من اشتراكك</h3>
               <p className="text-xs text-muted-foreground">أدخل اسم المستخدم في Pi Network للتأكد من حالة اشتراكك</p>
             </div>
@@ -268,8 +268,8 @@ export function AutoSubscriptionModal() {
         {step === "FORM" && (
           <form onSubmit={handleFormSubmit} className="space-y-4 text-right" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep text-gold rx-pulse">
-                <IconSparkle size={24} />
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-navy-deep p-1.5 rx-pulse">
+                <img src="/roadx-logo.png" alt="RoadX" className="h-full w-full object-contain" />
               </span>
               <h3 className="text-xl font-bold rx-gold-text">الاشتراك في RoadX Premium</h3>
               <p className="text-xs text-muted-foreground">أدخل بياناتك للتجهيز لعملية الدفع</p>
