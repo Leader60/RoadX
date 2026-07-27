@@ -99,12 +99,12 @@ export const TRACKS: Track[] = [
     baseComments: 74,
   },
   {
-    id: "trk-velvet",
+    id: "p=sub_to_oac",
     title: "آسرني",
-    artist: "ساره ديكسون",
+    artist: "صوفيا كازياليس",
     query: "asirni",
     summary:
-      "أغنية عاطفية حزينة، حب، وشوق وفراق باللهجة الخليجية البيضاء",
+      "أغنية عاطفية حزينة، حب وخذلان، شوق وفراق باللهجة الخليجية البيضاء",
     genre: "طرب خليجي - السامري البطيء",
     releaseDate: "2026-07-02",
     youtube: "https://youtu.be/cDz9ctgbczI?si=K5McGmifl_9y2hmo",
