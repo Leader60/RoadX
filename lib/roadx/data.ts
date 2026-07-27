@@ -7,6 +7,7 @@ export interface Track {
   title: string;
   artist: string;
   query: string; // placeholder image query
+  image?: string; // صورة مخصصة (اختياري) — تُستخدم بدل التوليد التلقائي إن وُجدت
   summary: string;
   genre: string;
   releaseDate: string; // ISO date
@@ -234,6 +235,11 @@ export const PLAYLISTS: Playlist[] = [
 
 export function imageUrl(query: string, w = 600, h = 600): string {
   return `/placeholder.svg?height=${h}&width=${w}&query=${encodeURIComponent(query)}`;
+}
+
+// يُستخدم في كل مكان تُعرض فيه صورة أغنية — يفضّل حقل image المخصص إن وُجد، وإلا يولّد صورة تلقائية من query
+export function trackImage(track: Track, w = 600, h = 600): string {
+  return track.image || imageUrl(track.query, w, h);
 }
 
 // Featured = latest by release date; boxes = next three.
