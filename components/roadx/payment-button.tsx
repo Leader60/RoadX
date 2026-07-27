@@ -290,7 +290,7 @@ export function AutoSubscriptionModal() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gold mb-1">الدولة *</label>
-                  <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} className="w-full rounded-lg border border-border bg-secondary/30 p-2 text-sm text-foreground focus:border-gold focus:outline-none" placeholder="الدولة" />
+                  <input type="text"  required value={country} onChange={(e) => setCountry(e.target.value)} className="w-full rounded-lg border border-border bg-secondary/30 p-2 text-sm text-foreground focus:border-gold focus:outline-none" placeholder="الدولة" />
                 </div>
               </div>
             </div>
