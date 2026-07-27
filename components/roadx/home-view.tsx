@@ -37,7 +37,7 @@ export function HomeView({ onOpenTrack }: { onOpenTrack: (id: string) => void })
       <section className="px-4">
         <SectionTitle className="mb-3">
           <span className="inline-flex items-center gap-1">
-            <IconSparkle size={16} className="text-gold" /> المقطوعة المميّزة
+            <IconSparkle size={16} className="text-gold" /> إصدار مميّز
           </span>
         </SectionTitle>
         <FeaturedCard
@@ -50,7 +50,7 @@ export function HomeView({ onOpenTrack }: { onOpenTrack: (id: string) => void })
 
       {/* Three boxes */}
       <section className="px-4">
-        <SectionTitle className="mb-3">أحدث المقطوعات</SectionTitle>
+        <SectionTitle className="mb-3">أحدث الإصدارات</SectionTitle>
         <div className="flex flex-col gap-3">
           {boxes.map((t) => (
             <FeatureBox key={t.id} track={t} onOpen={() => onOpenTrack(t.id)} />
