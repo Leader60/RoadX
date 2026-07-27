@@ -43,7 +43,7 @@ export function AuthLoadingScreen() {
               hasError ? "text-destructive" : "text-muted-foreground"
             }`}
           >
-            {hasError ? authMessage : "مرحباً ... جاري تحميل المنصة"}
+            {hasError ? authMessage : "مرحباً ... جارٍ تحميل المنصة"}
           </p>
         </div>
 
