@@ -14,6 +14,7 @@ export interface Track {
   youtube?: string;
   spotify?: string;
   apple?: string;
+  deezer?: string;
   baseLikes: number;
   baseComments: number;
 }
