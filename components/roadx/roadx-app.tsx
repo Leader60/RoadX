@@ -67,7 +67,7 @@ function AppInner() {
   if (!ready) return <LoadingScreen />;
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background">
+    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background border-x-[5px] border-gold shadow-2xl">
       <AppHeader tab={tab} onNavigate={navigate} />
       <main className="flex-1 pb-20">
         {tab === "home" && <HomeView onOpenTrack={openTrack} />}
