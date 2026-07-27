@@ -1,5 +1,5 @@
 import type { Track } from "@/lib/roadx/data";
-import { imageUrl, formatCount } from "@/lib/roadx/data";
+import { imageUrl, formatCount, trackImage } from "@/lib/roadx/data"; // ← أضفنا trackImage
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
 import { IconHeart, IconComment, IconYoutube, IconSpotify, IconApple } from "./icons";
@@ -47,7 +47,7 @@ export function TrackRow({ track, onOpen }: { track: Track; onOpen: () => void }
       className="rx-press flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2.5 text-right transition-colors hover:border-gold/50"
     >
       <img
-        src={imageUrl(track.query, 160, 160) || "/placeholder.svg"}
+        src={trackImage(track, 160, 160) || "/placeholder.svg"} // ← تم التعديل هنا
         alt={track.title}
         className="h-16 w-16 shrink-0 rounded-xl object-cover"
       />
@@ -76,7 +76,7 @@ export function FeatureBox({ track, onOpen }: { track: Track; onOpen: () => void
     >
       <div className="relative aspect-video w-full overflow-hidden">
         <img
-          src={imageUrl(track.query, 480, 270) || "/placeholder.svg"}
+          src={trackImage(track, 480, 270) || "/placeholder.svg"} // ← تم التعديل هنا
           alt={track.title}
           className="h-full w-full object-cover"
         />
