@@ -103,7 +103,7 @@ export function FeatureBox({ track, onOpen }: { track: Track; onOpen: () => void
         <p className="rx-clamp-2 text-xs leading-relaxed text-muted-foreground">
           {track.summary}
         </p>
-        <span className="mt-1 text-xs font-bold text-gold">اقرأ المزيد ←</span>
+        <span className="mt-1 text-xs font-bold text-gold">المزيد ←</span>
       </div>
     </button>
   );
