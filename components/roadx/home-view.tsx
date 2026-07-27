@@ -3,7 +3,7 @@
 import {
   featuredTrack,
   featuredBoxes,
-  imageUrl,
+  trackImage,
   formatCount,
   formatDate,
   type Track,
@@ -76,7 +76,7 @@ function FeaturedCard({
     <div className="overflow-hidden rounded-2xl border border-gold/30 bg-card">
       <div className="relative aspect-video w-full overflow-hidden">
         <img
-          src={imageUrl(track.query, 640, 360) || "/placeholder.svg"}
+          src={trackImage(track, 640, 360) || "/placeholder.svg"}
           alt={track.title}
           className="h-full w-full object-cover"
         />
