@@ -65,7 +65,7 @@ function PlaylistCard({ playlist, onOpen }: { playlist: Playlist; onOpen: () => 
           </span>
         )}
         <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-gold-foreground rx-nums">
-          {toArabicNum(playlist.trackIds.length)} مقطوعات
+          {toArabicNum(playlist.trackIds.length)} مقطوعات موسيقية
         </span>
       </div>
       <div className="p-2.5">
