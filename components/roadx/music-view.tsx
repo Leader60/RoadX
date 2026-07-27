@@ -113,7 +113,7 @@ export function MusicView({
 
       {/* Summary + streaming */}
       <section className="flex flex-col gap-3">
-        <SectionTitle>اختر المنصة أدناه</SectionTitle>
+        <SectionTitle>اختر منصة الاستماع أدناه</SectionTitle>
         <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
           {track.summary}
         </p>
