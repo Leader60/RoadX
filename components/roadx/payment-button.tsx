@@ -111,7 +111,7 @@ export function AutoSubscriptionModal() {
       if (data.active) {
         sessionStorage.setItem("roadx_user_choice", "premium_active");
         if (data.expirationDate) sessionStorage.setItem("roadx_expiry", data.expirationDate);
-        toast?.("مرحباً بعودتك! اشتراكك فعّال بالفعل.");
+        toast?.("مرحباً بعودتك! اشتراكك فعّال ✅.");
         setIsOpen(false);
       } else {
         setStep("FORM");
@@ -286,10 +286,10 @@ export function AutoSubscriptionModal() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs font-semibold text-gold mb-1">الهاتف (اختياري)</label>
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-border bg-secondary/30 p-2 text-sm text-foreground focus:border-gold focus:outline-none" placeholder="+..." />
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-border bg-secondary/30 p-2 text-sm text-foreground focus:border-gold focus:outline-none" placeholder="+965..." />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gold mb-1">الدولة (اختياري)</label>
+                  <label className="block text-xs font-semibold text-gold mb-1">الدولة *</label>
                   <input type="text" value={country} onChange={(e) => setCountry(e.target.value)} className="w-full rounded-lg border border-border bg-secondary/30 p-2 text-sm text-foreground focus:border-gold focus:outline-none" placeholder="الدولة" />
                 </div>
               </div>
@@ -393,7 +393,7 @@ export function AutoSubscriptionModal() {
               <div className="flex justify-between text-xs"><span className="text-muted-foreground">تاريخ الانتهاء:</span><span className="font-semibold text-gold rx-nums">{expirationDate}</span></div>
             </div>
             <div className="space-y-2">
-              <button onClick={handleSendEmailReceipt} className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press transition-all">إرسال نسخة من الفاتورة لبريدي</button>
+              <button onClick={handleSendEmailReceipt} className="w-full py-2.5 text-sm font-bold bg-gold text-gold-foreground rounded-xl hover:opacity-90 rx-press transition-all">إرسال نسخة من الفاتورة </button>
               <button onClick={() => setIsOpen(false)} className="w-full py-2.5 text-sm font-semibold bg-secondary hover:bg-secondary/80 text-foreground rounded-xl rx-press transition-all">تصفح الموقع بالكامل الآن</button>
             </div>
           </div>
