@@ -1,5 +1,5 @@
 import type { Track } from "@/lib/roadx/data";
-import { imageUrl, formatCount, trackImage } from "@/lib/roadx/data";
+import { formatCount, trackImage } from "@/lib/roadx/data"; // أزلنا imageUrl غير المستخدم
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
 import { IconHeart, IconComment, IconYoutube, IconSpotify, IconApple } from "./icons";
@@ -36,7 +36,7 @@ export function StreamingLinks({
   return (
     <div className={cx("flex flex-wrap items-center gap-2", className)}>
       {available.map(({ key, href, label, Icon }) => (
-        
+        <a // ← أضفنا <a المفقودة
           key={key}
           href={href}
           target="_blank"
