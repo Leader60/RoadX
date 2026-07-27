@@ -113,7 +113,7 @@ export function MusicView({
 
       {/* Summary + streaming */}
       <section className="flex flex-col gap-3">
-        <SectionTitle>عن المقطوعة</SectionTitle>
+        <SectionTitle>اختر المنصة أدناه</SectionTitle>
         <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
           {track.summary}
         </p>
@@ -164,7 +164,7 @@ export function MusicView({
             <EmptyState
               icon={<IconComment size={34} />}
               title="لا توجد تعليقات بعد"
-              hint="كن أول من يشارك رأيه في هذه المقطوعة"
+              hint="كن أول من يشارك رأيه في هذه العمل الموسيقي"
             />
           ) : (
             comments.map((c) => (
