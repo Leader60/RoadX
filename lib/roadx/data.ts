@@ -143,7 +143,7 @@ export const TRACKS: Track[] = [
       "أغنية وطنية لسوريا الإباء، وقاسيون الشامخ يحرس دمشق مدينة الحضارة والتاريخ",
     genre: "نشيد وطني",
     releaseDate: "2026-06-24",
-    youtube: "https://youtu.com",
+    youtube: "https://youtu.be/WJdF6zTuj_A?si=v8YBnzY5rf1PpsCg",
     spotify: "https://youtu.be/WJdF6zTuj_A?si=rAFaXMhrEmad9krQ",
     apple: "https://music.apple.com",
     baseLikes: 431,
