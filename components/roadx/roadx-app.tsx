@@ -1,5 +1,4 @@
 "use client";
-
 import { AutoSubscriptionModal } from "./payment-button";
 import { useEffect, useState } from "react";
 import { RoadXProvider, useRoadX } from "@/contexts/roadx-context";
@@ -33,21 +32,21 @@ function AppInner() {
       return true;
     }
 
-    // 2. إذا اختار التصفح المجاني المحدود ويحاول دخول الصفحات الموسيقية المحظورة
-    if (userChoice === "free_guest" && restrictedTabs.includes(targetTab)) {
+    // 2. أي حالة أخرى (زائر مجاني، أو لم يختر شيئاً بعد) تُمنع من الأقسام المحظورة
+    if (restrictedTabs.includes(targetTab)) {
       if (toast) {
         toast("عذراً! هذه القائمة مخصصة للمشتركين فقط. يرجى الاشتراك للوصول إليها.");
       }
       return false; // يمنع الوصول
     }
 
-    // 3. السماح بالوصول الافتراضي لباقي الحالات والصفحات العامة (مثل الرئيسية وحول واتصل بنا)
+    // 3. السماح بالوصول للصفحات العامة فقط (الرئيسية، حول، تواصل معنا)
     return true;
   };
 
   const openTrack = (id: string) => {
     if (!checkAccess("music")) return;
-    
+
     setTrackId(id);
     setLastTrack(id);
     setTab("music");
@@ -60,7 +59,7 @@ function AppInner() {
       setTab("home");
       return;
     }
-    
+
     setTab(t);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
