@@ -9,7 +9,6 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import { usePiAuth } from "@/contexts/pi-auth-context";
 import {
   KEYS,
   TRACK_MAP,
@@ -34,15 +33,24 @@ interface StateStore {
   set: (key: string, blob: Record<string, unknown>) => Promise<void>;
 }
 
-// In-memory fallback when the Pi SDK is unavailable (e.g. App Studio preview iframe).
-function createMemStore(): StateStore {
-  const map = new Map<string, Record<string, unknown>>();
+// تخزين دائم عبر localStorage بالمتصفح — يبقى محفوظاً على نفس الجهاز بين الجلسات
+function createLocalStore(): StateStore {
   return {
     async get(key) {
-      return map.has(key) ? { blob: map.get(key)! } : null;
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        return { blob: JSON.parse(raw) };
+      } catch {
+        return null;
+      }
     },
     async set(key, blob) {
-      map.set(key, blob);
+      try {
+        localStorage.setItem(key, JSON.stringify(blob));
+      } catch {
+        // تجاهل أخطاء تجاوز المساحة المسموحة
+      }
     },
   };
 }
@@ -66,7 +74,6 @@ function createSaver(
       onNotice(false);
       backoff = 1800;
     } catch {
-      // Keep the latest good state and retry with backoff — never lose data.
       pending = blob;
       onNotice(true);
       backoff = Math.min(backoff * 1.8, 30000);
@@ -94,18 +101,15 @@ interface RoadXContextValue {
   toasts: Toast[];
   pushToast: (message: string, tone?: Toast["tone"]) => void;
   dismissToast: (id: string) => void;
-  // likes
   likedIds: string[];
   isLiked: (trackId: string) => boolean;
   toggleLike: (trackId: string) => void;
   likeCount: (t: Track) => number;
-  // comments
   comments: UserComment[];
   commentsFor: (trackId: string) => UserComment[];
   commentCount: (t: Track) => number;
   addComment: (trackId: string, text: string) => void;
   deleteComment: (id: string) => void;
-  // prefs
   prefs: Prefs;
   setLastTrack: (trackId: string) => void;
 }
@@ -113,8 +117,6 @@ interface RoadXContextValue {
 const RoadXContext = createContext<RoadXContextValue | undefined>(undefined);
 
 export function RoadXProvider({ children }: { children: ReactNode }) {
-  const { sdk, isAuthenticated } = usePiAuth();
-
   const [ready, setReady] = useState(false);
   const [storageNotice, setStorageNotice] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -144,16 +146,11 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
   const dismissToast = (id: string) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  // Load state once authenticated or fallback to local memory immediately to bypass loading screen lock.
+  // تحميل البيانات المحفوظة محلياً عند بدء التطبيق
   useEffect(() => {
     let cancelled = false;
 
-    const store: StateStore = (sdk && isAuthenticated)
-      ? {
-          get: (key) => sdk.state.get(key) as Promise<{ blob: Record<string, unknown> } | null>,
-          set: (key, blob) => sdk.state.set(key, blob),
-        }
-      : createMemStore();
+    const store = createLocalStore();
     storeRef.current = store;
 
     const notice = (v: boolean) => setStorageNotice(v);
@@ -190,9 +187,8 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [sdk, isAuthenticated]);
+  }, []);
 
-  // Flush pending writes on tab hide/close.
   useEffect(() => {
     const flushAll = () => {
       const s = saversRef.current;
@@ -212,7 +208,6 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ---- likes ----
   const isLiked = (trackId: string) => likedRef.current.includes(trackId);
   const toggleLike = (trackId: string) => {
     const has = likedRef.current.includes(trackId);
@@ -225,7 +220,6 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
   };
   const likeCount = (t: Track) => t.baseLikes + (likedRef.current.includes(t.id) ? 1 : 0);
 
-  // ---- comments ----
   const commentsFor = (trackId: string) =>
     commentsRef.current
       .filter((c) => c.trackId === trackId)
@@ -251,7 +245,6 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
     saversRef.current?.comments.schedule(commentsToBlob(next));
   };
 
-  // ---- prefs ----
   const setLastTrack = (trackId: string) => {
     if (!TRACK_MAP[trackId]) return;
     const next: Prefs = { lastTrackId: trackId };
