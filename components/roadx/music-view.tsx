@@ -5,6 +5,7 @@ import {
   TRACK_MAP,
   TRACKS,
   imageUrl,
+  trackImage, // ← أضفنا هذا
   formatCount,
   formatDate,
   toArabicNum,
@@ -70,7 +71,7 @@ export function MusicView({
       <Card className="overflow-hidden">
         <div className="flex gap-4 p-4">
           <img
-            src={imageUrl(track.query, 220, 220) || "/placeholder.svg"}
+            src={trackImage(track, 220, 220) || "/placeholder.svg"} // ← تم التعديل
             alt={track.title}
             className="h-28 w-28 shrink-0 rounded-xl object-cover shadow-lg"
           />
@@ -218,7 +219,7 @@ function MiniTrack({ track, onOpen }: { track: Track; onOpen: () => void }) {
       className="rx-press flex w-32 shrink-0 flex-col gap-1.5 text-right"
     >
       <img
-        src={imageUrl(track.query, 200, 200) || "/placeholder.svg"}
+        src={trackImage(track, 200, 200) || "/placeholder.svg"} // ← تم التعديل
         alt={track.title}
         className="aspect-square w-full rounded-xl object-cover"
       />
