@@ -1,8 +1,20 @@
 import type { Track } from "@/lib/roadx/data";
-import { imageUrl, formatCount, trackImage } from "@/lib/roadx/data"; // ← أضفنا trackImage
+import { imageUrl, formatCount, trackImage } from "@/lib/roadx/data";
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
 import { IconHeart, IconComment, IconYoutube, IconSpotify, IconApple } from "./icons";
+
+// أيقونة Deezer بسيطة (دائرة بحرف D) — لا حاجة لملف أيقونات خارجي
+function IconDeezer({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="14" width="4" height="4" rx="0.5" fill="currentColor" />
+      <rect x="7.5" y="11" width="4" height="7" rx="0.5" fill="currentColor" />
+      <rect x="13" y="8" width="4" height="10" rx="0.5" fill="currentColor" />
+      <rect x="18.5" y="5" width="4" height="13" rx="0.5" fill="currentColor" />
+    </svg>
+  );
+}
 
 export function StreamingLinks({
   track,
@@ -17,13 +29,14 @@ export function StreamingLinks({
     { key: "yt", href: track.youtube, label: "يوتيوب", Icon: IconYoutube },
     { key: "sp", href: track.spotify, label: "سبوتيفاي", Icon: IconSpotify },
     { key: "ap", href: track.apple, label: "آبل ميوزك", Icon: IconApple },
+    { key: "dz", href: track.deezer, label: "ديزر", Icon: IconDeezer },
   ];
   const available = links.filter((l) => l.href);
   if (available.length === 0) return null;
   return (
     <div className={cx("flex flex-wrap items-center gap-2", className)}>
       {available.map(({ key, href, label, Icon }) => (
-        <a
+        
           key={key}
           href={href}
           target="_blank"
@@ -47,7 +60,7 @@ export function TrackRow({ track, onOpen }: { track: Track; onOpen: () => void }
       className="rx-press flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2.5 text-right transition-colors hover:border-gold/50"
     >
       <img
-        src={trackImage(track, 160, 160) || "/placeholder.svg"} // ← تم التعديل هنا
+        src={trackImage(track, 160, 160) || "/placeholder.svg"}
         alt={track.title}
         className="h-16 w-16 shrink-0 rounded-xl object-cover"
       />
@@ -76,7 +89,7 @@ export function FeatureBox({ track, onOpen }: { track: Track; onOpen: () => void
     >
       <div className="relative aspect-video w-full overflow-hidden">
         <img
-          src={trackImage(track, 480, 270) || "/placeholder.svg"} // ← تم التعديل هنا
+          src={trackImage(track, 480, 270) || "/placeholder.svg"}
           alt={track.title}
           className="h-full w-full object-cover"
         />
