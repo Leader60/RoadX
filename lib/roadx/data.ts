@@ -103,6 +103,7 @@ export const TRACKS: Track[] = [
     title: "آسرني",
     artist: "صوفيا كازياليس",
     query: "asirni",
+    image: "/public/songs_images/asirni.png"
     summary:
       "أغنية عاطفية حزينة، حب وخذلان، شوق وفراق باللهجة الخليجية البيضاء",
     genre: "طرب خليجي - السامري البطيء",
