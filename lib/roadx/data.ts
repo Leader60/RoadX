@@ -107,7 +107,7 @@ export const TRACKS: Track[] = [
       "مقطوعة سول ناعمة يتصدرها صوت دافئ وآلات حية، مثالية للأمسيات الهادئة.",
     genre: "سول / آر أند بي",
     releaseDate: "2026-07-02",
-    youtube: "https://bit.ly/4gYny6H",
+    youtube: "https://youtube.com",
     spotify: "https://spotify.com",
     apple: "https://music.apple.com",
     baseLikes: 745,
