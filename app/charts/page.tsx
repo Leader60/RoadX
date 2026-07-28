@@ -9,7 +9,8 @@ interface Track {
   artist: string;
   album: string;
   image: string;
-  deezer_url: string;
+  lastfm_url: string;
+  youtube_url: string;
   preview_url: string | null;
   duration_ms: number;
   rank: number;
@@ -21,10 +22,12 @@ export default function ChartsPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTrack, setActiveTrack] = useState<Track | null>(null);
 
   const fetchTracks = async (countryCode: string) => {
     setLoading(true);
     setError("");
+    setActiveTrack(null);
     try {
       const res = await fetch(`/api/roadx/deezer/top-tracks?country=${countryCode}&limit=20`);
       if (!res.ok) throw new Error("فشل جلب البيانات");
@@ -95,6 +98,43 @@ export default function ChartsPage() {
           </div>
         </div>
 
+        {/* Active Track Player */}
+        {activeTrack && (
+          <div className="mb-4 p-4 rounded-2xl border border-gold/30 bg-card">
+            <div className="flex items-center gap-4">
+              <img
+                src={activeTrack.image || "/placeholder.svg"}
+                alt={activeTrack.title}
+                className="w-16 h-16 rounded-xl object-cover"
+              />
+              <div className="flex-1 min-w-0 text-right">
+                <p className="font-bold text-gold">{activeTrack.title}</p>
+                <p className="text-xs text-muted-foreground">{activeTrack.artist}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {formatListeners(activeTrack.listeners)} مستمع
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTrack(null)}
+                className="text-muted-foreground hover:text-gold"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </div>
+            {activeTrack.youtube_url && (
+              <div className="mt-3 aspect-video rounded-xl overflow-hidden">
+                <iframe
+                  src={activeTrack.youtube_url.replace("https://www.last.fm/music/", "https://www.youtube.com/embed/")}
+                  className="w-full h-full"
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Loading */}
         {loading && (
           <div className="text-center py-12">
@@ -120,17 +160,24 @@ export default function ChartsPage() {
         {!loading && !error && tracks.length > 0 && (
           <div className="space-y-3">
             {tracks.map((track, index) => (
-              <a
+              <div
                 key={track.id}
-                href={track.deezer_url}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-gold/50 transition-all group"
               >
                 {/* Rank */}
                 <span className="w-8 text-center text-lg font-bold text-gold shrink-0">
                   {index + 1}
                 </span>
+
+                {/* Play Button */}
+                <button
+                  onClick={() => setActiveTrack(track)}
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-gold/10 text-gold hover:bg-gold hover:text-gold-foreground transition-all rx-press shrink-0"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5.5v13l11-6.5-11-6.5Z" />
+                  </svg>
+                </button>
 
                 {/* Image */}
                 {track.image && (
@@ -142,20 +189,25 @@ export default function ChartsPage() {
                 )}
 
                 {/* Info */}
-                <div className="flex-1 min-w-0 text-right">
+                <a
+                  href={track.lastfm_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 min-w-0 text-right"
+                >
                   <p className="font-bold text-foreground rx-clamp-1 group-hover:text-gold transition-colors">
                     {track.title}
                   </p>
                   <p className="text-xs text-muted-foreground rx-clamp-1">{track.artist}</p>
-                </div>
+                </a>
 
                 {/* Listeners */}
                 {track.listeners && (
                   <span className="text-[10px] text-muted-foreground shrink-0">
-                    {formatListeners(track.listeners)} مستمع
+                    {formatListeners(track.listeners)}
                   </span>
                 )}
-              </a>
+              </div>
             ))}
           </div>
         )}
