@@ -1,5 +1,4 @@
 // RoadX — data model, catalog, and helpers.
-import tracksData from "@/data/tracks.json";
 
 export type TabId = "home" | "music" | "songs" | "playlists" | "about" | "contact";
 
@@ -69,15 +68,77 @@ export const TICKER_ITEMS: string[] = [
   "منتقاة بعناية لجمهور مميّز يقدّر الموسيقى الراقية",
 ];
 
-// استيراد الأغاني من ملف JSON المنفصل
-export const TRACKS: Track[] = tracksData;
+// ========================
+// Google Sheets Data Source
+// ========================
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQpPH_eKPqt_UoA4G7vlAa548KyhgRp71DV923qjPCI6Bj7EtWD3dCXp1LZ41uX9s-bheJpVda7_U3C/pub?gid=0&single=true&output=csv";
 
-export const TRACK_MAP: Record<string, Track> = TRACKS.reduce(
-  (acc, t) => { acc[t.id] = t; return acc; },
-  {} as Record<string, Track>,
-);
+async function fetchTracksFromSheet(): Promise<Track[]> {
+  try {
+    const res = await fetch(SHEET_URL, { next: { revalidate: 60 } });
+    const csv = await res.text();
+    const lines = csv.trim().split("\n");
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(",").map((h) => h.trim());
 
-export const TRACK_IDS = new Set(TRACKS.map((t) => t.id));
+    return lines.slice(1).map((line) => {
+      const values = line.split(",").map((v) => v.trim());
+      const obj: Record<string, string> = {};
+      headers.forEach((h, i) => {
+        obj[h] = values[i] || "";
+      });
+
+      return {
+        id: obj.id,
+        title: obj.title,
+        artist: obj.artist,
+        query: obj.query,
+        image: obj.image || undefined,
+        summary: obj.summary,
+        genre: obj.genre,
+        releaseDate: obj.releaseDate,
+        youtube: obj.youtube || undefined,
+        spotify: obj.spotify || undefined,
+        apple: obj.apple || undefined,
+        deezer: obj.deezer || undefined,
+        baseLikes: parseInt(obj.baseLikes) || 0,
+        baseComments: parseInt(obj.baseComments) || 0,
+      };
+    });
+  } catch (error) {
+    console.error("فشل جلب البيانات من Google Sheets:", error);
+    return [];
+  }
+}
+
+// البيانات المخزنة مؤقتاً
+export let TRACKS: Track[] = [];
+
+// تحديث البيانات كل دقيقة
+async function refreshTracks() {
+  TRACKS = await fetchTracksFromSheet();
+  // تحديث المراجع المعتمدة على TRACKS
+  updateTrackReferences();
+}
+
+function updateTrackReferences() {
+  (TRACK_MAP as any) = TRACKS.reduce(
+    (acc, t) => { acc[t.id] = t; return acc; },
+    {} as Record<string, Track>,
+  );
+  (TRACK_IDS as any) = new Set(TRACKS.map((t) => t.id));
+}
+
+// التهيئة الأولية
+refreshTracks();
+setInterval(refreshTracks, 60000); // تحديث كل دقيقة
+
+// ========================
+
+export let TRACK_MAP: Record<string, Track> = {};
+export let TRACK_IDS = new Set<string>();
 
 export const PLAYLISTS: Playlist[] = [
   {
@@ -197,10 +258,10 @@ export function commentsToBlob(items: UserComment[]): Record<string, unknown> {
 export interface Prefs { lastTrackId: string; }
 
 export function sanitizePrefs(blob: unknown): Prefs {
-  const fallback: Prefs = { lastTrackId: TRACKS[0].id };
+  const fallback: Prefs = { lastTrackId: TRACKS[0]?.id || "" };
   if (!blob || typeof blob !== "object") return fallback;
   const id = cleanStr((blob as { lastTrackId?: unknown }).lastTrackId, 64);
-  return { lastTrackId: TRACK_IDS.has(id) ? id : TRACKS[0].id };
+  return { lastTrackId: TRACK_IDS.has(id) ? id : fallback.lastTrackId };
 }
 
 export function prefsToBlob(p: Prefs): Record<string, unknown> {
