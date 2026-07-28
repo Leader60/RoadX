@@ -54,7 +54,7 @@ export function AppHeader({
             <IconMenu size={24} />
           </IconButton>
           {count !== null && (
-            <span className="hidden sm:inline-flex text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+            <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
               {count} مشترك
             </span>
           )}
