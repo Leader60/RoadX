@@ -54,8 +54,8 @@ export const COMMENT_MAX = 400;
 
 export const NAV_ITEMS: { id: TabId; label: string }[] = [
   { id: "home", label: "الرئيسية" },
-  { id: "music", label: "المقطوعة" },
-  { id: "songs", label: "الأغاني" },
+  { id: "music", label: "مقطوعات موسيقية" },
+  { id: "songs", label: "أغاني" },
   { id: "playlists", label: "قوائم حصرية" },
   { id: "about", label: "من نحن" },
   { id: "contact", label: "تواصل معنا" },
