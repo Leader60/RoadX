@@ -3,8 +3,13 @@
 import { useEffect, useState } from "react";
 import { IconSparkle } from "./icons";
 
+interface TickerItem {
+  text: string;
+  url: string;
+}
+
 export function NewsTicker() {
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<TickerItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,9 +23,10 @@ export function NewsTicker() {
       const data = await res.json();
 
       if (data.tracks && data.tracks.length > 0) {
-        const newsItems = data.tracks.map((t: any) =>
-          `🎵 "${t.title}" — ${t.artist} | استمع الآن`
-        );
+        const newsItems: TickerItem[] = data.tracks.map((t: any) => ({
+          text: `🎵 "${t.title}" — ${t.artist} | استمع الآن`,
+          url: t.youtube_search || t.lastfm_url || "#",
+        }));
         setItems(newsItems);
       } else {
         setFallbackItems();
@@ -34,11 +40,11 @@ export function NewsTicker() {
 
   const setFallbackItems = () => {
     setItems([
-      "🎵 أحدث الإصدارات العالمية تصل إلى RoadX",
-      "🌟 اكتشف أشهر الأغاني في كل الدول",
-      "🎧 استمع لأفضل المقاطع الموسيقية",
-      "📈 تابع ترتيب الأغاني حسب بلدك",
-      "🔥 أكثر الأغاني استماعاً هذا الأسبوع",
+      { text: "🎵 أحدث الإصدارات العالمية تصل إلى RoadX", url: "/charts" },
+      { text: "🌟 اكتشف أشهر الأغاني في كل الدول", url: "/charts" },
+      { text: "🎧 استمع لأفضل المقاطع الموسيقية", url: "/charts" },
+      { text: "📈 تابع ترتيب الأغاني حسب بلدك", url: "/charts" },
+      { text: "🔥 أكثر الأغاني استماعاً هذا الأسبوع", url: "/charts" },
     ]);
   };
 
@@ -67,14 +73,17 @@ export function NewsTicker() {
       <div className="relative flex-1 overflow-hidden">
         <div className="rx-ticker-track">
           {loopItems.map((item, i) => (
-            <span
+            <a
               key={i}
-              className="mx-6 text-sm text-foreground/90 whitespace-nowrap"
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-6 text-sm text-foreground/90 whitespace-nowrap hover:text-gold transition-colors"
               aria-hidden={i >= items.length}
             >
-              {item}
+              {item.text}
               <span className="mr-6 text-gold">•</span>
-            </span>
+            </a>
           ))}
         </div>
       </div>
