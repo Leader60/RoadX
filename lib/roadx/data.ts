@@ -114,7 +114,19 @@ async function fetchTracksFromSheet(): Promise<Track[]> {
 }
 
 // البيانات المخزنة مؤقتاً
-export let TRACKS: Track[] = [];
+export let TRACKS: Track[] = [
+  {
+    id: "temp",
+    title: "جاري التحميل...",
+    artist: "RoadX",
+    query: "music",
+    summary: "يرجى الانتظار",
+    genre: "موسيقى",
+    releaseDate: "2026-01-01",
+    baseLikes: 0,
+    baseComments: 0,
+  },
+];
 
 // تحديث البيانات كل دقيقة
 async function refreshTracks() {
