@@ -240,7 +240,7 @@ export function AutoSubscriptionModal() {
         {step === "USERNAME_CHECK" && (
           <form onSubmit={handleCheckUsername} className="space-y-4 text-right" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/10 p-1.5 rx-pulse">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/30 p-1.5 rx-pulse">
                 <img src="/roadx-logo.png" alt="RoadX" className="h-full w-full object-contain" />
               </span>
               <h3 className="text-xl font-bold rx-gold-text">تحقق من اشتراكك</h3>
@@ -268,7 +268,7 @@ export function AutoSubscriptionModal() {
         {step === "FORM" && (
           <form onSubmit={handleFormSubmit} className="space-y-4 text-right" dir="rtl">
             <div className="flex flex-col items-center gap-2 text-center mb-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/10 p-1.5 rx-pulse">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full border border-gold/40 bg-gold/30 p-1.5 rx-pulse">
                 <img src="/roadx-logo.png" alt="RoadX" className="h-full w-full object-contain" />
               </span>
               <h3 className="text-xl font-bold rx-gold-text">الاشتراك في RoadX Premium</h3>
