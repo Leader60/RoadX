@@ -45,7 +45,6 @@ export const COUNTRIES: { code: string; name: string }[] = [
   { code: "IQ", name: "العراق" },
   { code: "EG", name: "مصر" },
   { code: "TN", name: "تونس" },
-  { code: "DZ", name: "الجزائر" },
   { code: "MA", name: "المغرب" },
   { code: "RU", name: "روسيا" },
   { code: "BR", name: "البرازيل" },
