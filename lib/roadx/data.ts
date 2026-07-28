@@ -74,17 +74,42 @@ export const TICKER_ITEMS: string[] = [
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQpPH_eKPqt_UoA4G7vlAa548KyhgRp71DV923qjPCI6Bj7EtWD3dCXp1LZ41uX9s-bheJpVda7_U3C/pub?gid=0&single=true&output=csv";
 
+// محلّل CSV بسيط يدعم الحقول المحاطة بعلامات اقتباس (") — يتعامل مع الفواصل داخل النص نفسه
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
 async function fetchTracksFromSheet(): Promise<Track[]> {
   try {
     const res = await fetch(SHEET_URL, { next: { revalidate: 60 } });
     const csv = await res.text();
     const lines = csv.trim().split("\n");
     if (lines.length < 2) return [];
-    
-    const headers = lines[0].split(",").map((h) => h.trim());
+
+    const headers = parseCsvLine(lines[0]);
 
     return lines.slice(1).map((line) => {
-      const values = line.split(",").map((v) => v.trim());
+      const values = parseCsvLine(line);
       const obj: Record<string, string> = {};
       headers.forEach((h, i) => {
         obj[h] = values[i] || "";
@@ -128,6 +153,18 @@ export let TRACKS: Track[] = [
   },
 ];
 
+// ✅ معرّفتان الآن بشكل صحيح كمتغيرات وحدة قابلة لإعادة التعيين
+export let TRACK_MAP: Record<string, Track> = {};
+export let TRACK_IDS: Set<string> = new Set();
+
+function updateTrackReferences() {
+  TRACK_MAP = TRACKS.reduce(
+    (acc, t) => { acc[t.id] = t; return acc; },
+    {} as Record<string, Track>,
+  );
+  TRACK_IDS = new Set(TRACKS.map((t) => t.id));
+}
+
 // تحديث البيانات كل دقيقة
 async function refreshTracks() {
   const newTracks = await fetchTracksFromSheet();
@@ -135,14 +172,6 @@ async function refreshTracks() {
     TRACKS = newTracks;
     updateTrackReferences();
   }
-}
-
-function updateTrackReferences() {
-  (TRACK_MAP as any) = TRACKS.reduce(
-    (acc, t) => { acc[t.id] = t; return acc; },
-    {} as Record<string, Track>,
-  );
-  (TRACK_IDS as any) = new Set(TRACKS.map((t) => t.id));
 }
 
 // التهيئة الأولية
