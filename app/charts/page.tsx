@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { COUNTRIES, SITE_NAME } from "@/lib/constants";
 
 interface Track {
@@ -10,7 +10,7 @@ interface Track {
   album: string;
   image: string;
   deezer_url: string;
-  preview_url: string;
+  preview_url: string | null;
   duration_ms: number;
   rank: number;
 }
@@ -20,13 +20,14 @@ export default function ChartsPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const fetchTracks = async (countryCode: string) => {
     setLoading(true);
     setError("");
     try {
-      const playlistId = getPlaylistId(countryCode);
-      const res = await fetch(`/api/roadx/deezer/top-tracks?playlist_id=${playlistId}&limit=20`);
+      const res = await fetch(`/api/roadx/deezer/top-tracks?country=${countryCode}&limit=20`);
       if (!res.ok) throw new Error("فشل جلب البيانات");
       const data = await res.json();
       setTracks(data.tracks);
@@ -38,27 +39,33 @@ export default function ChartsPage() {
     }
   };
 
-  // Deezer Playlist IDs
-  const getPlaylistId = (code: string): string => {
-    const map: Record<string, string> = {
-      global: "3155776842",
-      US: "1506518311",
-      GB: "1111143121",
-      FR: "1109890291",
-      DE: "1111141961",
-      KW: "1000000",
-      SA: "1000000",
-      AE: "1000000",
-      EG: "1000000",
-      SY: "1000000",
-      LB: "1000000",
-    };
-    return map[code] || map["global"];
-  };
-
   useEffect(() => {
     fetchTracks(selectedCountry);
+    setPlayingId(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
   }, [selectedCountry]);
+
+  const togglePlay = (track: Track) => {
+    if (playingId === track.id) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setPlayingId(null);
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      if (track.preview_url) {
+        const audio = new Audio(track.preview_url);
+        audio.play();
+        audioRef.current = audio;
+        setPlayingId(track.id);
+        audio.onended = () => setPlayingId(null);
+      }
+    }
+  };
 
   const formatTime = (ms: number) => {
     const min = Math.floor(ms / 60000);
@@ -69,6 +76,7 @@ export default function ChartsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-8">
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gold mb-2">{SITE_NAME}</h1>
           <p className="text-sm text-muted-foreground">أكثر المقاطع رواجاً حسب كل دولة</p>
@@ -93,6 +101,7 @@ export default function ChartsPage() {
           </div>
         </div>
 
+        {/* Loading */}
         {loading && (
           <div className="text-center py-12">
             <div className="h-12 w-12 mx-auto rounded-full border-4 border-gold border-t-transparent rx-spin mb-4" />
@@ -100,6 +109,7 @@ export default function ChartsPage() {
           </div>
         )}
 
+        {/* Error */}
         {error && (
           <div className="text-center py-12 text-red-400">
             <p>{error}</p>
@@ -112,38 +122,75 @@ export default function ChartsPage() {
           </div>
         )}
 
+        {/* Tracks List */}
         {!loading && !error && tracks.length > 0 && (
           <div className="space-y-3">
             {tracks.map((track, index) => (
-              <a
+              <div
                 key={track.id}
-                href={track.deezer_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 p-3 rounded-2xl border border-border bg-card hover:border-gold/50 transition-all rx-press group"
+                className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-card hover:border-gold/50 transition-all group"
               >
+                {/* Rank */}
                 <span className="w-8 text-center text-lg font-bold text-gold shrink-0">
                   {index + 1}
                 </span>
-                <img
-                  src={track.image || "/placeholder.svg"}
-                  alt={track.title}
-                  className="w-14 h-14 rounded-xl object-cover shrink-0"
-                />
-                <div className="flex-1 min-w-0 text-right">
+
+                {/* Play Button */}
+                {track.preview_url && (
+                  <button
+                    onClick={() => togglePlay(track)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gold/10 text-gold hover:bg-gold hover:text-gold-foreground transition-all rx-press shrink-0"
+                  >
+                    {playingId === track.id ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="4" width="4" height="16" rx="1" />
+                        <rect x="14" y="4" width="4" height="16" rx="1" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 5.5v13l11-6.5-11-6.5Z" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+
+                {/* Image */}
+                <a
+                  href={track.deezer_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0"
+                >
+                  <img
+                    src={track.image || "/placeholder.svg"}
+                    alt={track.title}
+                    className="w-14 h-14 rounded-xl object-cover"
+                  />
+                </a>
+
+                {/* Info */}
+                <a
+                  href={track.deezer_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 min-w-0 text-right"
+                >
                   <p className="font-bold text-foreground rx-clamp-1 group-hover:text-gold transition-colors">
                     {track.title}
                   </p>
                   <p className="text-xs text-muted-foreground rx-clamp-1">{track.artist}</p>
-                </div>
+                </a>
+
+                {/* Duration */}
                 <span className="text-xs text-muted-foreground shrink-0">
                   {formatTime(track.duration_ms)}
                 </span>
-              </a>
+              </div>
             ))}
           </div>
         )}
 
+        {/* Empty */}
         {!loading && !error && tracks.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <p>لا توجد بيانات متاحة حالياً لهذه الدولة</p>
