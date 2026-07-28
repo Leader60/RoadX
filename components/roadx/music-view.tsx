@@ -113,7 +113,7 @@ export function MusicView({
 
       {/* Summary + streaming */}
       <section className="flex flex-col gap-3">
-        <SectionTitle>اختر منصة الاستماع التي تفضّلها أدناه</SectionTitle>
+        <SectionTitle>اختر منصة الاستماع التي تفضّلها أدناه:</SectionTitle>
         <p className="text-sm leading-relaxed text-muted-foreground text-pretty">
           {track.summary}
         </p>
@@ -199,7 +199,7 @@ export function MusicView({
 
       {/* More tracks */}
       <section className="flex flex-col gap-3">
-        <SectionTitle>مقطوعات أخرى</SectionTitle>
+        <SectionTitle>إصدارات أخرى</SectionTitle>
         <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 rx-no-scrollbar">
           {TRACKS.filter((t) => t.id !== track.id)
             .slice(0, 6)
