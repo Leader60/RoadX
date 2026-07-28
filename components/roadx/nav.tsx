@@ -47,36 +47,34 @@ export function AppHeader({
 
   return (
     <>
-  <header className="sticky top-0 z-40 grid grid-cols-3 items-center border-b border-gold/25 bg-background/95 px-4 py-3 backdrop-blur rx-safe-top h-[70px]">
-    
-    {/* 1. الجانب الأيمن (القائمة والمشتركين): متمركز شاقولياً */}
-    <div className="flex items-center justify-start gap-2 h-full">
-      <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
-        <IconMenu size={24} />
-      </IconButton>
-      {count !== null && (
-        <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
-          {count} مشترك
-        </span>
-      )}
-    </div>
+      <header className="sticky top-0 z-40 grid grid-cols-3 items-center border-b border-gold/25 bg-background/95 px-4 py-3 backdrop-blur rx-safe-top h-[70px]">
+        {/* 1. الجانب الأيمن (القائمة والمشتركين): متمركز شاقولياً */}
+        <div className="flex items-center justify-start gap-2 h-full">
+          <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
+            <IconMenu size={24} />
+          </IconButton>
+          {count !== null && (
+            <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+              {count} مشترك
+            </span>
+          )}
+        </div>
 
-    {/* 2. المنتصف (النص): متمركز شاقولياً بفضل layout الهيدر */}
-    <div className="text-center leading-tight">
-      <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
-      <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
-    </div>
+        {/* 2. المنتصف (النص): متمركز شاقولياً بفضل layout الهيدر */}
+        <div className="text-center leading-tight">
+          <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
+          <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
+        </div>
 
-    {/* 3. الجانب الأيسر (الشعار): تم إضافة classes لتوسطه شاقولياً */}
-    <div className="flex items-center justify-end h-full">
-      <img 
-        src="/roadx-logo.png" 
-        alt="RoadX" 
-        className="h-10 w-auto object-contain my-auto self-center block" 
-      />
-    </div>
-
-  </header>
+        {/* 3. الجانب الأيسر (الشعار): تم إضافة classes لتوسطه شاقولياً */}
+        <div className="flex items-center justify-end h-full">
+          <img
+            src="/roadx-logo.png"
+            alt="RoadX"
+            className="h-10 w-auto object-contain my-auto self-center block"
+          />
+        </div>
+      </header>
 
       {/* Drawer */}
       {open && (
@@ -112,6 +110,31 @@ export function AppHeader({
                   </button>
                 );
               })}
+
+              {/* رابط سياسة الخصوصية وشروط الاستخدام */}
+              <a
+                href="/privacy"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpen(false);
+                  window.location.href = "/privacy";
+                }}
+                className="rx-press flex items-center gap-3 rounded-xl px-3 py-3 text-base font-bold text-foreground transition-colors hover:bg-secondary border-t border-gold/20 mt-2 pt-3"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 3 5 5.5v4.5c0 5.5 7 9 7 9s7-3.5 7-9V5.5L12 3Z" />
+                </svg>
+                سياسة الخصوصية وشروط الاستخدام
+              </a>
             </div>
             <div className="border-t border-border p-4 text-center text-xs text-muted-foreground">
               أحدث الإصدارات الموسيقية العالمية
