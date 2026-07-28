@@ -111,6 +111,23 @@ export function AppHeader({
                 );
               })}
 
+              {/* رابط الأكثر رواجاً */}
+              <a
+                href="/charts"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpen(false);
+                  window.location.href = "/charts";
+                }}
+                className="rx-press flex items-center gap-3 rounded-xl px-3 py-3 text-base font-bold text-foreground transition-colors hover:bg-secondary"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18" />
+                  <path d="m19 9-5 5-4-4-3 3" />
+                </svg>
+                الأكثر رواجاً
+              </a>
+
               {/* رابط سياسة الخصوصية وشروط الاستخدام */}
               <a
                 href="/privacy"
