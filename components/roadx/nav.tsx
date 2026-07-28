@@ -48,30 +48,30 @@ export function AppHeader({
   return (
     <>
       <header className="sticky top-0 z-40 grid grid-cols-3 items-center border-b border-gold/25 bg-background/95 px-4 py-3 backdrop-blur rx-safe-top h-[70px]">
-        {/* 1. الجانب الأيمن (القائمة والمشتركين): متمركز شاقولياً */}
+        {/* 1. الجانب الأيمن (القائمة والمشتركين) */}
         <div className="flex items-center justify-start gap-2 h-full">
           <IconButton onClick={() => setOpen(true)} aria-label="القائمة">
             <IconMenu size={24} />
           </IconButton>
           {count !== null && (
-            <span className="text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
+            <span className="hidden sm:inline-flex text-[12px] font-bold text-gold border border-gold/30 rounded-full px-2 py-1 whitespace-nowrap">
               {count} مشترك
             </span>
           )}
         </div>
 
-        {/* 2. المنتصف (النص): متمركز شاقولياً بفضل layout الهيدر */}
+        {/* 2. المنتصف (النص) */}
         <div className="text-center leading-tight">
           <div className="text-xl font-bold rx-gold-text tracking-wide">RoadX</div>
           <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
         </div>
 
-        {/* 3. الجانب الأيسر للمستخدم (الشعار + زر خيارات متقدمة تحته) */}
-        <div className="flex flex-col items-start gap-1 h-full justify-center">
+        {/* 3. الجانب الأيسر للمستخدم (الشعار + زر خيارات متقدمة) - ظاهر على كل الأجهزة */}
+        <div className="flex flex-col items-center justify-center gap-0.5 h-full">
           <img
             src="/roadx-logo.png"
             alt="RoadX"
-            className="h-8 w-auto object-contain block"
+            className="h-7 w-auto object-contain block"
           />
           <a
             href="/charts"
@@ -79,9 +79,9 @@ export function AppHeader({
               e.preventDefault();
               window.location.href = "/charts";
             }}
-            className="rx-press hidden sm:inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold hover:bg-gold hover:text-gold-foreground transition-colors"
+            className="rx-press inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[9px] font-bold text-gold hover:bg-gold hover:text-gold-foreground transition-colors leading-tight"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <path d="M2 12h20" />
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
