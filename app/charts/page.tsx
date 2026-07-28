@@ -9,10 +9,10 @@ interface Track {
   artist: string;
   album: string;
   image: string;
-  spotify_url: string;
+  deezer_url: string;
   preview_url: string;
   duration_ms: number;
-  popularity: number;
+  rank: number;
 }
 
 export default function ChartsPage() {
@@ -26,7 +26,7 @@ export default function ChartsPage() {
     setError("");
     try {
       const playlistId = getPlaylistId(countryCode);
-      const res = await fetch(`/api/roadx/spotify/top-tracks?playlist_id=${playlistId}&limit=20`);
+      const res = await fetch(`/api/roadx/deezer/top-tracks?playlist_id=${playlistId}&limit=20`);
       if (!res.ok) throw new Error("فشل جلب البيانات");
       const data = await res.json();
       setTracks(data.tracks);
@@ -38,19 +38,20 @@ export default function ChartsPage() {
     }
   };
 
+  // Deezer Playlist IDs
   const getPlaylistId = (code: string): string => {
     const map: Record<string, string> = {
-      global: "37i9dQZEVXbMDoHDwVN2tF",
-      US: "37i9dQZEVXbLRQDuF5jeGp",
-      GB: "37i9dQZEVXbLnolsZ8PSNw",
-      FR: "37i9dQZEVXbIPWwFssbrad",
-      DE: "37i9dQZEVXbJiZcmkrIHGU",
-      SA: "37i9dQZEVXbLrQBcXeOdBm",
-      AE: "37i9dQZEVXbM4UZuIrvHvA",
-      KW: "37i9dQZEVXbJnsX3cJqJJZ",
-      EG: "37i9dQZEVXbLn7RQmT5Xv2",
-      SY: "37i9dQZEVXbJ8jAq6QGhBP",
-      LB: "37i9dQZEVXbJ6JQXZ3IpbX",
+      global: "3155776842",
+      US: "1506518311",
+      GB: "1111143121",
+      FR: "1109890291",
+      DE: "1111141961",
+      KW: "1000000",
+      SA: "1000000",
+      AE: "1000000",
+      EG: "1000000",
+      SY: "1000000",
+      LB: "1000000",
     };
     return map[code] || map["global"];
   };
@@ -68,13 +69,12 @@ export default function ChartsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-8">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gold mb-2">{SITE_NAME}</h1>
           <p className="text-sm text-muted-foreground">أكثر المقاطع رواجاً حسب كل دولة</p>
         </div>
 
-        {/* Country Selector - Grid */}
+        {/* Country Grid */}
         <div className="mb-6">
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
             {COUNTRIES.map((country) => (
@@ -93,7 +93,6 @@ export default function ChartsPage() {
           </div>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="text-center py-12">
             <div className="h-12 w-12 mx-auto rounded-full border-4 border-gold border-t-transparent rx-spin mb-4" />
@@ -101,7 +100,6 @@ export default function ChartsPage() {
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="text-center py-12 text-red-400">
             <p>{error}</p>
@@ -114,13 +112,12 @@ export default function ChartsPage() {
           </div>
         )}
 
-        {/* Tracks List */}
         {!loading && !error && tracks.length > 0 && (
           <div className="space-y-3">
             {tracks.map((track, index) => (
               <a
                 key={track.id}
-                href={track.spotify_url}
+                href={track.deezer_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-4 p-3 rounded-2xl border border-border bg-card hover:border-gold/50 transition-all rx-press group"
@@ -147,7 +144,6 @@ export default function ChartsPage() {
           </div>
         )}
 
-        {/* Empty */}
         {!loading && !error && tracks.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <p>لا توجد بيانات متاحة حالياً لهذه الدولة</p>
