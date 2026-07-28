@@ -66,13 +66,28 @@ export function AppHeader({
           <div className="text-[12px] text-muted-foreground">منصة الموسيقى العالمية</div>
         </div>
 
-        {/* 3. الجانب الأيسر (الشعار): تم إضافة classes لتوسطه شاقولياً */}
-        <div className="flex items-center justify-end h-full">
+        {/* 3. الجانب الأيسر للمستخدم (الشعار + زر خيارات متقدمة تحته) */}
+        <div className="flex flex-col items-start gap-1 h-full justify-center">
           <img
             src="/roadx-logo.png"
             alt="RoadX"
-            className="h-10 w-auto object-contain my-auto self-center block"
+            className="h-8 w-auto object-contain block"
           />
+          <a
+            href="/charts"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = "/charts";
+            }}
+            className="rx-press hidden sm:inline-flex items-center gap-1 rounded-full border border-gold/30 bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold hover:bg-gold hover:text-gold-foreground transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M2 12h20" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span>خيارات متقدمة</span>
+          </a>
         </div>
       </header>
 
