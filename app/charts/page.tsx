@@ -74,14 +74,14 @@ export default function ChartsPage() {
           <p className="text-sm text-muted-foreground">أكثر المقاطع رواجاً حسب كل دولة</p>
         </div>
 
-        {/* Country Selector */}
-        <div className="mb-6 overflow-x-auto rx-no-scrollbar">
-          <div className="flex gap-2 pb-2 min-w-max">
+        {/* Country Selector - Grid */}
+        <div className="mb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
             {COUNTRIES.map((country) => (
               <button
                 key={country.code}
                 onClick={() => setSelectedCountry(country.code)}
-                className={`px-4 py-2 rounded-full text-sm font-bold transition-all rx-press whitespace-nowrap ${
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all rx-press text-center ${
                   selectedCountry === country.code
                     ? "bg-gold text-gold-foreground"
                     : "bg-secondary text-muted-foreground hover:bg-secondary/80"
