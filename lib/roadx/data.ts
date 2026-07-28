@@ -152,9 +152,6 @@ setInterval(refreshTracks, 60000);
 
 // ========================
 
-export let TRACK_MAP: Record<string, Track> = {};
-export let TRACK_IDS = new Set<string>();
-
 export const PLAYLISTS: Playlist[] = [
   {
     id: "pl-latenight", title: "أمسيات ذهبية",
