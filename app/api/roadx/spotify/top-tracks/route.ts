@@ -10,41 +10,28 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  try {
-    const res = await fetch("https://accounts.spotify.com/api/token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
-      },
-      body: "grant_type=client_credentials",
-    });
+  const authHeader = "Basic " + btoa(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`);
 
-    const text = await res.text();
-    
-    // محاولة تحليل النص كـ JSON
-    let data: any;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error("Spotify Auth Response (not JSON):", text.slice(0, 200));
-      throw new Error(`فشل تحليل استجابة Spotify: ${text.slice(0, 100)}`);
-    }
+  const res = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: authHeader,
+    },
+    body: "grant_type=client_credentials",
+  });
 
-    if (!res.ok || data.error) {
-      console.error("Spotify Auth Error:", data);
-      throw new Error(data.error_description || data.error || "فشل المصادقة مع Spotify");
-    }
+  const data = await res.json();
 
-    cachedToken = {
-      token: data.access_token,
-      expires: Date.now() + data.expires_in * 1000 - 60000,
-    };
-    return data.access_token;
-  } catch (error: any) {
-    console.error("getAccessToken Error:", error);
-    throw error;
+  if (!res.ok || data.error) {
+    throw new Error(data.error_description || data.error || "فشل المصادقة");
   }
+
+  cachedToken = {
+    token: data.access_token,
+    expires: Date.now() + data.expires_in * 1000 - 60000,
+  };
+  return data.access_token;
 }
 
 export async function GET(req: NextRequest) {
@@ -53,7 +40,6 @@ export async function GET(req: NextRequest) {
     const playlistId = searchParams.get("playlist_id") || "37i9dQZEVXbMDoHDwVN2tF";
     const limit = searchParams.get("limit") || "10";
 
-    // التحقق من وجود متغيرات البيئة
     if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
       return NextResponse.json(
         { error: "متغيرات البيئة SPOTIFY غير مضبوطة" },
@@ -71,20 +57,9 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    const text = await res.text();
-    let data: any;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error("Spotify Tracks Response (not JSON):", text.slice(0, 200));
-      return NextResponse.json(
-        { error: "استجابة غير متوقعة من Spotify" },
-        { status: 502 }
-      );
-    }
+    const data = await res.json();
 
     if (!res.ok) {
-      console.error("Spotify API Error:", data);
       return NextResponse.json(
         { error: data.error?.message || `خطأ Spotify: ${res.status}` },
         { status: res.status }
@@ -103,15 +78,10 @@ export async function GET(req: NextRequest) {
       popularity: item.track?.popularity || 0,
     })) || [];
 
-    return NextResponse.json({
-      tracks,
-      total: tracks.length,
-      playlist_id: playlistId,
-    });
+    return NextResponse.json({ tracks, total: tracks.length });
   } catch (error: any) {
-    console.error("API Error:", error);
     return NextResponse.json(
-      { error: error.message || "خطأ داخلي في الخادم" },
+      { error: error.message || "خطأ داخلي" },
       { status: 500 }
     );
   }
