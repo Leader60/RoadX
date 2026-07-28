@@ -130,9 +130,11 @@ export let TRACKS: Track[] = [
 
 // تحديث البيانات كل دقيقة
 async function refreshTracks() {
-  TRACKS = await fetchTracksFromSheet();
-  // تحديث المراجع المعتمدة على TRACKS
-  updateTrackReferences();
+  const newTracks = await fetchTracksFromSheet();
+  if (newTracks.length > 0) {
+    TRACKS = newTracks;
+    updateTrackReferences();
+  }
 }
 
 function updateTrackReferences() {
@@ -144,8 +146,9 @@ function updateTrackReferences() {
 }
 
 // التهيئة الأولية
+updateTrackReferences();
 refreshTracks();
-setInterval(refreshTracks, 60000); // تحديث كل دقيقة
+setInterval(refreshTracks, 60000);
 
 // ========================
 
