@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   featuredTrack,
   featuredBoxes,
@@ -16,8 +17,34 @@ import { IconHeart, IconComment, IconPlay, IconSparkle } from "./icons";
 
 export function HomeView({ onOpenTrack }: { onOpenTrack: (id: string) => void }) {
   const { likeCount, commentCount } = useRoadX();
-  const featured = featuredTrack();
-  const boxes = featuredBoxes();
+  const [featured, setFeatured] = useState<Track | null>(null);
+  const [boxes, setBoxes] = useState<Track[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // انتظار تحميل البيانات
+    const check = setInterval(() => {
+      const ft = featuredTrack();
+      if (ft && ft.id !== "temp") {
+        setFeatured(ft);
+        setBoxes(featuredBoxes());
+        setReady(true);
+        clearInterval(check);
+      }
+    }, 500);
+    return () => clearInterval(check);
+  }, []);
+
+  if (!ready || !featured) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="h-10 w-10 mx-auto rounded-full border-4 border-gold border-t-transparent rx-spin mb-4" />
+          <p className="text-muted-foreground">جاري تحميل أحدث الإصدارات...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rx-fade-in flex flex-col gap-6 pb-6">
