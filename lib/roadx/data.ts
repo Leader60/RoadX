@@ -178,7 +178,7 @@ setInterval(refreshTracks, 60000);
 // قوائم التشغيل الحصرية
 // ========================
 
-// قائمة العربي - Google Sheets
+// قائمة مختارات عربية - Google Sheets
 export const ARABIC_PLAYLIST_SHEET =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSD5nZvil8NuqPcNsGomcheKuVrJYi1Zp3C928dLQ28lp6sa5dLXD6PRxXJUV7tBeQD95TtXM8Bc95e/pub?gid=0&single=true&output=csv";
 
@@ -187,6 +187,19 @@ export const ARABIC_PLAYLIST: Playlist = {
   title: "مختارات عربية",
   query: "arabic music oriental album art",
   description: "أجمل الأغاني العربية - منتقاة يدوياً",
+  trackIds: [],
+  premium: false,
+};
+
+// قائمة الدبكة - Google Sheets
+export const DABKE_PLAYLIST_SHEET =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSoP9oWER_kj6yM5eCJGhWkocxQrQ8gUnJUy0Lo8TqBLdHqasejzmPY6N9Gu9hrnBFdxoWNqDvDFQym/pub?gid=0&single=true&output=csv";
+
+export const DABKE_PLAYLIST: Playlist = {
+  id: "dabke-gs",
+  title: "دبكة",
+  query: "dabke arabic folk dance music",
+  description: "أفضل أغاني الطرب والرقص الشعبي",
   trackIds: [],
   premium: false,
 };
@@ -227,14 +240,6 @@ export const PLAYLISTS: Playlist[] = [
     title: "أفضل أغاني الروك",
     query: "rock music guitar dark album cover",
     description: "أقوى أغاني الروك",
-    trackIds: [],
-    premium: false,
-  },
-    {
-    id: "arabic-public",
-    title: "دبكة",
-    query: "أغاني شعبية طرب دبكة",
-    description: "أفضل أغاني الطرب والرقص الشعبي",
     trackIds: [],
     premium: false,
   },
