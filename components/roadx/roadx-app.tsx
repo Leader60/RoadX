@@ -6,6 +6,7 @@ import type { TabId } from "@/lib/roadx/data";
 import { AppHeader, BottomNav } from "./nav";
 import { HomeView } from "./home-view";
 import { MusicView } from "./music-view";
+import { InstrumentalView } from "./instrumental-view";
 import { SongsView } from "./songs-view";
 import { PlaylistsView } from "./playlists-view";
 import { AboutView } from "./about-view";
@@ -17,36 +18,23 @@ function AppInner() {
   const [tab, setTab] = useState<TabId>("home");
   const [trackId, setTrackId] = useState<string>(prefs.lastTrackId);
 
-  // Adopt the persisted last track once state has loaded.
   useEffect(() => {
     if (ready) setTrackId(prefs.lastTrackId);
   }, [ready, prefs.lastTrackId]);
 
-  // دالة فحص وتدقيق صلاحيات الوصول بناءً على حالة الاشتراك والدفع
   const checkAccess = (targetTab: TabId): boolean => {
     const userChoice = sessionStorage.getItem("roadx_user_choice");
     const restrictedTabs: TabId[] = ["music", "songs", "playlists"];
-
-    // 1. إذا أتم المستخدم الدفع بنجاح، يُسمح له بالعبور والوصول لكامل ميزات الموقع
-    if (userChoice === "premium_active") {
-      return true;
-    }
-
-    // 2. أي حالة أخرى (زائر مجاني، أو لم يختر شيئاً بعد) تُمنع من الأقسام المحظورة
+    if (userChoice === "premium_active") return true;
     if (restrictedTabs.includes(targetTab)) {
-      if (toast) {
-        toast("عذراً! هذه القائمة مخصصة للمشتركين فقط. يرجى الاشتراك للوصول إليها.");
-      }
-      return false; // يمنع الوصول
+      if (toast) toast("عذراً! هذه القائمة مخصصة للمشتركين فقط. يرجى الاشتراك للوصول إليها.");
+      return false;
     }
-
-    // 3. السماح بالوصول للصفحات العامة فقط (الرئيسية، حول، تواصل معنا)
     return true;
   };
 
   const openTrack = (id: string) => {
     if (!checkAccess("music")) return;
-
     setTrackId(id);
     setLastTrack(id);
     setTab("music");
@@ -54,12 +42,7 @@ function AppInner() {
   };
 
   const navigate = (t: TabId) => {
-    if (!checkAccess(t)) {
-      // إجبار المستخدم على البقاء في الرئيسية في حال لم يملك صلاحية العبور للتبويب المطلوب
-      setTab("home");
-      return;
-    }
-
+    if (!checkAccess(t)) { setTab("home"); return; }
     setTab(t);
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
@@ -71,7 +54,7 @@ function AppInner() {
       <AppHeader tab={tab} onNavigate={navigate} />
       <main className="flex-1 pb-20">
         {tab === "home" && <HomeView onOpenTrack={openTrack} />}
-        {tab === "music" && <MusicView trackId={trackId} onOpenTrack={openTrack} />}
+        {tab === "music" && <InstrumentalView onOpenTrack={openTrack} />}
         {tab === "songs" && <SongsView onOpenTrack={openTrack} />}
         {tab === "playlists" && <PlaylistsView onOpenTrack={openTrack} />}
         {tab === "about" && <AboutView />}
@@ -80,7 +63,6 @@ function AppInner() {
       <BottomNav tab={tab} onNavigate={navigate} />
       <StorageNotice />
       <ToastHost />
-      {/* استدعاء نافذة الاشتراك التلقائية بمراحلها الثلاث */}
       <AutoSubscriptionModal />
     </div>
   );
