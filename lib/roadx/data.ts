@@ -178,71 +178,37 @@ setInterval(refreshTracks, 60000);
 // قوائم التشغيل الحصرية
 // ========================
 
-// قائمة مختارات عربية - Google Sheets
 export const ARABIC_PLAYLIST_SHEET =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSD5nZvil8NuqPcNsGomcheKuVrJYi1Zp3C928dLQ28lp6sa5dLXD6PRxXJUV7tBeQD95TtXM8Bc95e/pub?gid=0&single=true&output=csv";
 
 export const ARABIC_PLAYLIST: Playlist = {
-  id: "arabic-gs",
-  title: "مختارات عربية",
-  query: "arabic music oriental album art",
-  description: "أجمل الأغاني العربية - منتقاة يدوياً",
-  trackIds: [],
-  premium: false,
+  id: "arabic-gs", title: "مختارات عربية", query: "arabic music oriental album art",
+  description: "أجمل الأغاني العربية - منتقاة يدوياً", trackIds: [], premium: false,
 };
 
-// قائمة الدبكة - Google Sheets
 export const DABKE_PLAYLIST_SHEET =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSoP9oWER_kj6yM5eCJGhWkocxQrQ8gUnJUy0Lo8TqBLdHqasejzmPY6N9Gu9hrnBFdxoWNqDvDFQym/pub?gid=0&single=true&output=csv";
 
 export const DABKE_PLAYLIST: Playlist = {
-  id: "dabke-gs",
-  title: "دبكة",
-  query: "dabke arabic folk dance music",
-  description: "أفضل أغاني الطرب والرقص الشعبي",
-  trackIds: [],
-  premium: false,
+  id: "dabke-gs", title: "دبكة", query: "dabke arabic folk dance music",
+  description: "أفضل أغاني الطرب والرقص الشعبي", trackIds: [], premium: false,
 };
 
-// قائمة اليونانية - Google Sheets
 export const GREEK_PLAYLIST_SHEET =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSvDwXiV6syjtE5ackB24FiXJMJkxf0KfaG0wXWZFh_mWyCCJF-ua5yx5uFJ0uXdD3TgQQe2J4a-DUF/pub?gid=0&single=true&output=csv";
 
 export const GREEK_PLAYLIST: Playlist = {
-  id: "greek-gs",
-  title: "اليونانية",
-  query: "greek music mediterranean album art",
-  description: "أجمل الأغاني اليونانية - منتقاة يدوياً",
-  trackIds: [],
-  premium: false,
+  id: "greek-gs", title: "اليونانية", query: "greek music mediterranean album art",
+  description: "أجمل الأغاني اليونانية - منتقاة يدوياً", trackIds: [], premium: false,
 };
 
-// القوائم العالمية - Deezer
+export const INSTRUMENTAL_SHEET =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTxLRQpkuiJlFxmEJb1957tfwqxVOElzhg4nb_jJB7nC_7b8e1371w7DywQZNGz-P6Eej8sUZDhB2b/pub?gid=0&single=true&output=csv";
+
 export const PLAYLISTS: Playlist[] = [
-  {
-    id: "3155776842",
-    title: "Top 50 - عالمي",
-    query: "top 50 global hits album artwork",
-    description: "أشهر 50 أغنية في العالم هذا الأسبوع",
-    trackIds: [],
-    premium: false,
-  },
-  {
-    id: "1109890291",
-    title: "أفضل أغاني البوب",
-    query: "pop music hits colorful album cover",
-    description: "أجمل أغاني البوب العالمية",
-    trackIds: [],
-    premium: false,
-  },
-  {
-    id: "1111141961",
-    title: "أفضل أغاني الروك",
-    query: "rock music guitar dark album cover",
-    description: "أقوى أغاني الروك",
-    trackIds: [],
-    premium: false,
-  },
+  { id: "3155776842", title: "Top 50 - عالمي", query: "top 50 global hits album artwork", description: "أشهر 50 أغنية في العالم هذا الأسبوع", trackIds: [], premium: false },
+  { id: "1109890291", title: "أفضل أغاني البوب", query: "pop music hits colorful album cover", description: "أجمل أغاني البوب العالمية", trackIds: [], premium: false },
+  { id: "1111141961", title: "أفضل أغاني الروك", query: "rock music guitar dark album cover", description: "أقوى أغاني الروك", trackIds: [], premium: false },
 ];
 
 export function imageUrl(query: string, w = 600, h = 600): string {
@@ -253,16 +219,10 @@ export function trackImage(track: Track, w = 600, h = 600): string {
   return track.image || imageUrl(track.query, w, h);
 }
 
-export function sortedByDate(): Track[] {
-  return [...TRACKS].sort((a, b) => b.releaseDate.localeCompare(a.releaseDate));
-}
-
+export function sortedByDate(): Track[] { return [...TRACKS].sort((a, b) => b.releaseDate.localeCompare(a.releaseDate)); }
 export function featuredTrack(): Track { return sortedByDate()[0]; }
 export function featuredBoxes(): Track[] { return sortedByDate().slice(1, 4); }
-
-export function uid(prefix = "id"): string {
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
+export function uid(prefix = "id"): string { return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
 
 export function clampNum(v: unknown, min: number, max: number, fallback = 0): number {
   const n = typeof v === "number" && Number.isFinite(v) ? v : Number(v);
@@ -276,9 +236,7 @@ export function cleanStr(v: unknown, max = 500): string {
 }
 
 const AR_DIGITS = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
-export function toArabicNum(n: number): string {
-  return String(n).replace(/[0-9]/g, (d) => AR_DIGITS[Number(d)]);
-}
+export function toArabicNum(n: number): string { return String(n).replace(/[0-9]/g, (d) => AR_DIGITS[Number(d)]); }
 
 export function formatCount(n: number): string {
   if (n >= 1000000) return toArabicNum(Math.round(n / 100000) / 10) + " م";
@@ -308,9 +266,7 @@ export function sanitizeLikes(blob: unknown): string[] {
   return out;
 }
 
-export function likesToBlob(ids: string[]): Record<string, unknown> {
-  return { ids: ids.slice(0, LIKES_CAP) };
-}
+export function likesToBlob(ids: string[]): Record<string, unknown> { return { ids: ids.slice(0, LIKES_CAP) }; }
 
 export function sanitizeComments(blob: unknown): UserComment[] {
   if (!blob || typeof blob !== "object") return [];
@@ -342,6 +298,4 @@ export function sanitizePrefs(blob: unknown): Prefs {
   return { lastTrackId: TRACK_IDS.has(id) ? id : fallback.lastTrackId };
 }
 
-export function prefsToBlob(p: Prefs): Record<string, unknown> {
-  return { lastTrackId: p.lastTrackId };
-}
+export function prefsToBlob(p: Prefs): Record<string, unknown> { return { lastTrackId: p.lastTrackId }; }
