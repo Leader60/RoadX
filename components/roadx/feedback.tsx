@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
-import { IconSpinner } from "./icons";
+import { IconSpinner, IconPlay } from "./icons";
 
 export function ToastHost() {
   const { toasts } = useRoadX();
@@ -40,28 +40,35 @@ export function StorageNotice() {
 }
 
 export function LoadingScreen() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [started, setStarted] = useState(false);
 
-  useEffect(() => {
+  const handleStart = () => {
+    setStarted(true);
     try {
       const audio = new Audio("/songs_images/RoadX_Start.mp3");
       audio.volume = 0.5;
       audio.play().catch(() => {});
-      audioRef.current = audio;
     } catch {}
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, []);
+  };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background">
       <div className="text-3xl font-bold rx-gold-text tracking-widest">RoadX</div>
-      <IconSpinner size={28} className="text-gold" />
-      <p className="text-sm text-muted-foreground">جارٍ تحميل الموسيقى...</p>
+
+      {!started ? (
+        <button
+          onClick={handleStart}
+          className="rx-press flex items-center gap-3 rounded-full border border-gold/30 bg-gold/10 px-6 py-3 text-gold hover:bg-gold hover:text-gold-foreground transition-colors"
+        >
+          <IconPlay size={22} />
+          <span className="font-bold">تشغيل موسيقى البداية</span>
+        </button>
+      ) : (
+        <div className="flex flex-col items-center gap-4">
+          <IconSpinner size={28} className="text-gold" />
+          <p className="text-sm text-muted-foreground">جارٍ تحميل الموسيقى...</p>
+        </div>
+      )}
     </div>
   );
 }
