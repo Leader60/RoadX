@@ -74,7 +74,6 @@ export const TICKER_ITEMS: string[] = [
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQpPH_eKPqt_UoA4G7vlAa548KyhgRp71DV923qjPCI6Bj7EtWD3dCXp1LZ41uX9s-bheJpVda7_U3C/pub?gid=0&single=true&output=csv";
 
-// محلّل CSV بسيط يدعم الحقول المحاطة بعلامات اقتباس (") — يتعامل مع الفواصل داخل النص نفسه
 function parseCsvLine(line: string): string[] {
   const result: string[] = [];
   let current = "";
@@ -138,7 +137,6 @@ async function fetchTracksFromSheet(): Promise<Track[]> {
   }
 }
 
-// البيانات المخزنة مؤقتاً
 export let TRACKS: Track[] = [
   {
     id: "temp",
@@ -153,7 +151,6 @@ export let TRACKS: Track[] = [
   },
 ];
 
-// ✅ معرّفتان الآن بشكل صحيح كمتغيرات وحدة قابلة لإعادة التعيين
 export let TRACK_MAP: Record<string, Track> = {};
 export let TRACK_IDS: Set<string> = new Set();
 
@@ -165,7 +162,6 @@ function updateTrackReferences() {
   TRACK_IDS = new Set(TRACKS.map((t) => t.id));
 }
 
-// تحديث البيانات كل دقيقة
 async function refreshTracks() {
   const newTracks = await fetchTracksFromSheet();
   if (newTracks.length > 0) {
@@ -174,37 +170,45 @@ async function refreshTracks() {
   }
 }
 
-// التهيئة الأولية
 updateTrackReferences();
 refreshTracks();
 setInterval(refreshTracks, 60000);
 
 // ========================
-
+// قوائم التشغيل الحصرية - Deezer
+// ========================
 export const PLAYLISTS: Playlist[] = [
   {
-    id: "pl-latenight", title: "أمسيات ذهبية",
-    query: "golden late night lounge playlist cover navy",
-    description: "منتقاة للسهرات الهادئة والأمسيات الراقية.",
-    trackIds: ["trk-midnight", "trk-velvet", "trk-marble", "trk-lantern"], premium: false,
+    id: "3155776842",
+    title: "Top 50 - عالمي",
+    query: "top 50 global music chart",
+    description: "أشهر 50 أغنية في العالم هذا الأسبوع",
+    trackIds: [],
+    premium: false,
   },
   {
-    id: "pl-focus", title: "تركيز عميق",
-    query: "deep focus ambient minimal playlist cover blue",
-    description: "أصوات أمبيانت وكلاسيكية تساعد على التركيز والصفاء.",
-    trackIds: ["trk-echoes", "trk-marble", "trk-aurora"], premium: false,
+    id: "1109890291",
+    title: "أفضل البوب",
+    query: "best pop hits playlist",
+    description: "أجمل أغاني البوب العالمية",
+    trackIds: [],
+    premium: false,
   },
   {
-    id: "pl-drive", title: "طريق مفتوح",
-    query: "open road drive energetic playlist cover sunset",
-    description: "إيقاعات نشطة لرحلات القيادة الطويلة.",
-    trackIds: ["trk-horizon", "trk-pulse", "trk-midnight"], premium: false,
+    id: "1111141961",
+    title: "الروك",
+    query: "rock hits playlist",
+    description: "أقوى أغاني الروك",
+    trackIds: [],
+    premium: false,
   },
   {
-    id: "pl-editors", title: "اختيارات المحرّرين",
-    query: "editors choice curated premium playlist cover gold",
-    description: "أبرز الإصدارات التي اختارها فريق RoadX هذا الشهر.",
-    trackIds: ["trk-aurora", "trk-pulse", "trk-velvet", "trk-horizon", "trk-marble"], premium: false,
+    id: "1051268111",
+    title: "أفضل العربي",
+    query: "top arabic songs",
+    description: "أجمل الأغاني العربية",
+    trackIds: [],
+    premium: false,
   },
 ];
 
