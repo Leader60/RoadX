@@ -33,7 +33,6 @@ interface StateStore {
   set: (key: string, blob: Record<string, unknown>) => Promise<void>;
 }
 
-// تخزين دائم عبر localStorage بالمتصفح — يبقى محفوظاً على نفس الجهاز بين الجلسات
 function createLocalStore(): StateStore {
   return {
     async get(key) {
@@ -55,7 +54,6 @@ function createLocalStore(): StateStore {
   };
 }
 
-// A debounced, backoff-aware saver for a single key.
 function createSaver(
   store: StateStore,
   key: string,
@@ -146,7 +144,6 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
   const dismissToast = (id: string) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
 
-  // تحميل البيانات المحفوظة محلياً عند بدء التطبيق
   useEffect(() => {
     let cancelled = false;
 
@@ -230,7 +227,6 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
   const addComment = (trackId: string, textRaw: string) => {
     const text = cleanStr(textRaw, COMMENT_MAX).trim();
     if (!text) return;
-    if (!TRACK_MAP[trackId]) return;
     const entry: UserComment = { id: uid("c"), trackId, text, createdAt: Date.now() };
     const next = [...commentsRef.current, entry];
     commentsRef.current = next;
@@ -246,7 +242,6 @@ export function RoadXProvider({ children }: { children: ReactNode }) {
   };
 
   const setLastTrack = (trackId: string) => {
-    if (!TRACK_MAP[trackId]) return;
     const next: Prefs = { lastTrackId: trackId };
     prefsRef.current = next;
     setPrefs(next);
