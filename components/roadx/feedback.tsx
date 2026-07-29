@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
-import { IconSpinner, IconPlay } from "./icons";
+import { IconSpinner } from "./icons";
 
 export function ToastHost() {
   const { toasts } = useRoadX();
@@ -40,63 +39,11 @@ export function StorageNotice() {
 }
 
 export function LoadingScreen() {
-  const [started, setStarted] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setStarted(true);
-      try {
-        const audio = new Audio("/songs_images/RoadX_Start.mp3");
-        audio.volume = 0.5;
-        audio.play().catch(() => {});
-        audioRef.current = audio;
-      } catch {}
-    }, 3000);
-
-    const stopMusic = () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-    window.addEventListener("stop-startup-music", stopMusic);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("stop-startup-music", stopMusic);
-      stopMusic();
-    };
-  }, []);
-
-  const handleStart = () => {
-    setStarted(true);
-    try {
-      const audio = new Audio("/songs_images/RoadX_Start.mp3");
-      audio.volume = 0.5;
-      audio.play().catch(() => {});
-      audioRef.current = audio;
-    } catch {}
-  };
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
       <div className="text-3xl font-bold rx-gold-text tracking-widest">RoadX</div>
-
-      {!started ? (
-        <button
-          onClick={handleStart}
-          className="rx-press flex items-center gap-3 rounded-full border border-gold/30 bg-gold/10 px-6 py-3 text-gold hover:bg-gold hover:text-gold-foreground transition-colors animate-pulse"
-        >
-          <IconPlay size={22} />
-          <span className="font-bold">تشغيل موسيقى البداية</span>
-        </button>
-      ) : (
-        <div className="flex flex-col items-center gap-4">
-          <IconSpinner size={28} className="text-gold" />
-          <p className="text-sm text-muted-foreground">جارٍ تحميل الموسيقى...</p>
-        </div>
-      )}
+      <IconSpinner size={28} className="text-gold" />
+      <p className="text-sm text-muted-foreground">جارٍ تحميل الموسيقى...</p>
     </div>
   );
 }
