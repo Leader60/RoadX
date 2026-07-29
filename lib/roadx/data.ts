@@ -231,7 +231,7 @@ export const PLAYLISTS: Playlist[] = [
     premium: false,
   },
     {
-    id: "أغاني عربية شعبية",
+    id: "arabic-public",
     title: "دبكة",
     query: "أغاني شعبية طرب دبكة",
     description: "أفضل أغاني الطرب والرقص الشعبي",
