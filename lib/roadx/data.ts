@@ -184,7 +184,7 @@ export const ARABIC_PLAYLIST_SHEET =
 
 export const ARABIC_PLAYLIST: Playlist = {
   id: "arabic-gs",
-  title: "أفضل العربي",
+  title: "مختارات عربية",
   query: "arabic music oriental album art",
   description: "أجمل الأغاني العربية - منتقاة يدوياً",
   trackIds: [],
@@ -216,7 +216,7 @@ export const PLAYLISTS: Playlist[] = [
   },
   {
     id: "1109890291",
-    title: "أفضل البوب",
+    title: "أفضل أغاني البوب",
     query: "pop music hits colorful album cover",
     description: "أجمل أغاني البوب العالمية",
     trackIds: [],
@@ -224,9 +224,17 @@ export const PLAYLISTS: Playlist[] = [
   },
   {
     id: "1111141961",
-    title: "الروك",
+    title: "أفضل أغاني الروك",
     query: "rock music guitar dark album cover",
     description: "أقوى أغاني الروك",
+    trackIds: [],
+    premium: false,
+  },
+    {
+    id: "أغاني عربية شعبية",
+    title: "طرب - دبكة - رقص",
+    query: "jazz music smooth album",
+    description: "أفضل أفضل أغاني الطرب والرقص الشعبي",
     trackIds: [],
     premium: false,
   },
