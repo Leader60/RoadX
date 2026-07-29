@@ -7,16 +7,17 @@ import {
   ARABIC_PLAYLIST_SHEET,
   GREEK_PLAYLIST,
   GREEK_PLAYLIST_SHEET,
+  DABKE_PLAYLIST,
+  DABKE_PLAYLIST_SHEET,
   imageUrl,
   type Playlist,
 } from "@/lib/roadx/data";
 import { SectionTitle } from "./ui";
 import { IconSparkle, IconChevronLeft, IconPlay } from "./icons";
 
-// صور الأغلفة
 const COVERS: Record<string, string> = {
   "arabic-gs": "/songs_images/Arabic_Artists.png",
-  "arabic-public": "/songs_images/Arabic_Public.png",
+  "dabke-gs": "/songs_images/Arabic_Public.png",
   "greek-gs": "/songs_images/Greek_Artists.png",
   "3155776842": "/songs_images/Top_50.png",
   "1109890291": "/songs_images/Pop_Songs.png",
@@ -47,6 +48,10 @@ export function PlaylistsView({ onOpenTrack }: { onOpenTrack: (id: string) => vo
     return <GoogleSheetDetail playlist={ARABIC_PLAYLIST} sheetUrl={ARABIC_PLAYLIST_SHEET} onBack={() => setOpenId(null)} />;
   }
 
+  if (openId === "dabke-gs") {
+    return <GoogleSheetDetail playlist={DABKE_PLAYLIST} sheetUrl={DABKE_PLAYLIST_SHEET} onBack={() => setOpenId(null)} />;
+  }
+
   if (openId === "greek-gs") {
     return <GoogleSheetDetail playlist={GREEK_PLAYLIST} sheetUrl={GREEK_PLAYLIST_SHEET} onBack={() => setOpenId(null)} />;
   }
@@ -71,6 +76,17 @@ export function PlaylistsView({ onOpenTrack }: { onOpenTrack: (id: string) => vo
           <div className="absolute bottom-3 right-3 left-3">
             <h3 className="text-xl font-bold text-foreground">{ARABIC_PLAYLIST.title}</h3>
             <p className="text-xs text-muted-foreground mt-1">{ARABIC_PLAYLIST.description}</p>
+          </div>
+        </div>
+      </button>
+
+      <button onClick={() => setOpenId("dabke-gs")} className="rx-press flex flex-col overflow-hidden rounded-2xl border border-gold/30 bg-card transition-colors hover:border-gold">
+        <div className="relative h-40 w-full overflow-hidden">
+          <img src={COVERS["dabke-gs"]} alt={DABKE_PLAYLIST.title} className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/90 to-transparent" />
+          <div className="absolute bottom-3 right-3 left-3">
+            <h3 className="text-xl font-bold text-foreground">{DABKE_PLAYLIST.title}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{DABKE_PLAYLIST.description}</p>
           </div>
         </div>
       </button>
