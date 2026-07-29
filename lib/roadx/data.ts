@@ -232,9 +232,9 @@ export const PLAYLISTS: Playlist[] = [
   },
     {
     id: "أغاني عربية شعبية",
-    title: "طرب - دبكة - رقص",
-    query: "jazz music smooth album",
-    description: "أفضل أفضل أغاني الطرب والرقص الشعبي",
+    title: "دبكة",
+    query: "أغاني شعبية طرب دبكة",
+    description: "أفضل أغاني الطرب والرقص الشعبي",
     trackIds: [],
     premium: false,
   },
