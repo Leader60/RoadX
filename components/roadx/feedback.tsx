@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
 import { IconSpinner } from "./icons";
@@ -39,6 +40,23 @@ export function StorageNotice() {
 }
 
 export function LoadingScreen() {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    try {
+      const audio = new Audio("/songs_images/RoadX_Start.mp3");
+      audio.volume = 0.5;
+      audio.play().catch(() => {});
+      audioRef.current = audio;
+    } catch {}
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
       <div className="text-3xl font-bold rx-gold-text tracking-widest">RoadX</div>
