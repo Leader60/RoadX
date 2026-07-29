@@ -1,60 +1,89 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { RoadXApp } from "@/components/roadx/roadx-app";
 
 export default function HomePage() {
+  const [hasStarted, setHasStarted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const handleStart = () => {
+    setHasStarted(true);
+    
+    if (audioRef.current) {
+      audioRef.current.play().catch((err) => console.log("Audio play error:", err));
+    }
+  };
+
   useEffect(() => {
+    if (!hasStarted) return;
+
     const audio = audioRef.current;
-    if (!audio) return;
 
-    // دالة محاولة تشغيل الصوت
-    const playAudio = () => {
-      audio.play().catch(() => {
-        // إذا حظره المت المتصفح، سيعمل فور أول لمسة للشاشة
-      });
-    };
-
-    // تشغيل الصوت فوراً عند التحميل
-    playAudio();
-
-    // ربط التشغيل بأي لمسة أو نقرة لفك حظر المتصفح فوراً في الثواني الأولى
-    const handleUserInteraction = () => {
-      if (audio.paused && audio.currentTime < 15) {
-        audio.play().catch(() => {});
-      }
-    };
-
-    window.addEventListener('click', handleUserInteraction);
-    window.addEventListener('touchstart', handleUserInteraction);
-
-    // مؤقت دقيق: عند وصول الصوت للثانية 15 يتم إيقافه نهائياً ومنع إعادة تشغيله
     const handleTimeUpdate = () => {
-      if (audio.currentTime >= 15) {
+      if (audio && audio.currentTime >= 15) {
         audio.pause();
         audio.removeEventListener('timeupdate', handleTimeUpdate);
       }
     };
 
-    audio.addEventListener('timeupdate', handleTimeUpdate);
+    if (audio) {
+      audio.addEventListener('timeupdate', handleTimeUpdate);
+    }
 
     return () => {
-      window.removeEventListener('click', handleUserInteraction);
-      window.removeEventListener('touchstart', handleUserInteraction);
-      audio.removeEventListener('timeupdate', handleTimeUpdate);
-      audio.pause();
+      if (audio) {
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.pause();
+      }
     };
-  }, []);
+  }, [hasStarted]);
 
   return (
-    <main>
-      {/* عنصر الصوت ثابت في الـ DOM مباشرة لضمان عدم تأثره بأي تحديث داخل التطبيق */}
+    // تركنا الحاوية بدون لون خلفية إجباري لكي تعود لـ off-white الطبيعي للموقع
+    <main style={{ minHeight: '100vh', position: 'relative' }}>
+      {/* عنصر الصوت */}
       <audio ref={audioRef} src="/intro.mp3" preload="auto" />
 
-      {/* التطبيق الرئيسي */}
-      <RoadXApp />
+      {!hasStarted ? (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#fafafa', // لون أوف وايت ناعم للشاشة التمهيدية ليتناسب مع موقعك
+          color: '#1e293b',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+          padding: '20px'
+        }}>
+          <h1 style={{ fontSize: '26px', marginBottom: '12px', fontWeight: 'bold' }}>مرحباً بك في RoadX</h1>
+          <p style={{ color: '#64748b', marginBottom: '24px' }}>اضغط على الزر لبدء الموسيقى والتطوير</p>
+          <button
+            onClick={handleStart}
+            style={{
+              padding: '12px 32px',
+              fontSize: '16px',
+              fontWeight: '600',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            }}
+          >
+            دخول التطبيق 🎵
+          </button>
+        </div>
+      ) : (
+        /* عرض التطبيق بأسلوبه ومساحته الأصلية تماماً */
+        <RoadXApp />
+      )}
     </main>
   );
 }
