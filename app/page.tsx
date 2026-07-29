@@ -7,47 +7,53 @@ export default function HomePage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // 1. إنشاء عنصر الصوت
-    const audio = new Audio('/intro.mp3');
-    audioRef.current = audio;
+    const audio = audioRef.current;
+    if (!audio) return;
 
-    // دالة للتشغيل المضمون
-    const handlePlay = () => {
-      if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().catch((err) => console.log("Audio play error:", err));
+    // دالة محاولة تشغيل الصوت
+    const playAudio = () => {
+      audio.play().catch(() => {
+        // إذا حظره المت المتصفح، سيعمل فور أول لمسة للشاشة
+      });
+    };
+
+    // تشغيل الصوت فوراً عند التحميل
+    playAudio();
+
+    // ربط التشغيل بأي لمسة أو نقرة لفك حظر المتصفح فوراً في الثواني الأولى
+    const handleUserInteraction = () => {
+      if (audio.paused && audio.currentTime < 15) {
+        audio.play().catch(() => {});
       }
     };
 
-    // محاولة التشغيل التلقائي فور التحميل
-    handlePlay();
+    window.addEventListener('click', handleUserInteraction);
+    window.addEventListener('touchstart', handleUserInteraction);
 
-    // تشغيل الصوت مع أول تفاعل للمستخدم في حال حظره المتصفح
-    window.addEventListener('click', handlePlay, { once: true });
-    window.addEventListener('touchstart', handlePlay, { once: true });
-
-    // 2. إيقاف الموسيقى تماماً بعد 15 ثانية لتفسح المجال لشاشة التحقق
-    const timer = setTimeout(() => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+    // مؤقت دقيق: عند وصول الصوت للثانية 15 يتم إيقافه نهائياً ومنع إعادة تشغيله
+    const handleTimeUpdate = () => {
+      if (audio.currentTime >= 15) {
+        audio.pause();
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
       }
-    }, 15000);
+    };
 
-    // تنظيف الموارد عند الخروج
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+
     return () => {
-      clearTimeout(timer);
-      window.removeEventListener('click', handlePlay);
-      window.removeEventListener('touchstart', handlePlay);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.pause();
     };
   }, []);
 
   return (
     <main>
-      {/* عرض التطبيق بشكل طبيعي مع ترك شاشة التحقق الداخلية تظهر تلقائياً */}
+      {/* عنصر الصوت ثابت في الـ DOM مباشرة لضمان عدم تأثره بأي تحديث داخل التطبيق */}
+      <audio ref={audioRef} src="/intro.mp3" preload="auto" />
+
+      {/* التطبيق الرئيسي */}
       <RoadXApp />
     </main>
   );
