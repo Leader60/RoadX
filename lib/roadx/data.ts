@@ -181,7 +181,7 @@ export const PLAYLISTS: Playlist[] = [
   {
     id: "3155776842",
     title: "Top 50 - عالمي",
-    query: "top 50 global music chart playlist",
+    query: "top 50 global hits album artwork",
     description: "أشهر 50 أغنية في العالم هذا الأسبوع",
     trackIds: [],
     premium: false,
@@ -189,7 +189,7 @@ export const PLAYLISTS: Playlist[] = [
   {
     id: "1109890291",
     title: "أفضل البوب",
-    query: "best pop hits 2025 playlist",
+    query: "pop music hits colorful album cover",
     description: "أجمل أغاني البوب العالمية",
     trackIds: [],
     premium: false,
@@ -197,15 +197,15 @@ export const PLAYLISTS: Playlist[] = [
   {
     id: "1111141961",
     title: "الروك",
-    query: "best rock songs ever playlist",
+    query: "rock music guitar dark album cover",
     description: "أقوى أغاني الروك",
     trackIds: [],
     premium: false,
   },
   {
-    id: "1051268111",
+    id: "1313621735",
     title: "أفضل العربي",
-    query: "top arabic songs 2025 playlist",
+    query: "arabic music oriental album art",
     description: "أجمل الأغاني العربية",
     trackIds: [],
     premium: false,
