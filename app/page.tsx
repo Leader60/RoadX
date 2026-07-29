@@ -76,7 +76,7 @@ export default function HomePage() {
           </div>
 
           <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '15px' }}>
-            اضغط على الزر لبدء التجربة والموسيقى
+            مرحباً... أضغط للاستمتاع بالموسيقى
           </p>
           
           <button
