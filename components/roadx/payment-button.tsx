@@ -262,6 +262,13 @@ export function AutoSubscriptionModal() {
             >
               {checkingUsername ? "جاري التحقق..." : "متابعة"}
             </button>
+            <button
+              type="button"
+              onClick={handleContinueFree}
+              className="w-full py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors text-center border border-border hover:border-gold/30 rounded-xl rx-press"
+            >
+              ليس لدي حساب Pi — تخطّي والتصفح كزائر
+            </button>
           </form>
         )}
 
