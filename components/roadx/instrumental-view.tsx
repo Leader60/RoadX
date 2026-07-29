@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { INSTRUMENTAL_SHEET, imageUrl } from "@/lib/roadx/data";
-import { TrackRow } from "./track-card";
-import { SectionTitle, cx, inputClass, EmptyState } from "./ui";
+import { INSTRUMENTAL_SHEET } from "@/lib/roadx/data";
+import { SectionTitle, EmptyState } from "./ui";
 import { IconList } from "./icons";
 
 interface InstrumentalTrack {
@@ -22,8 +21,7 @@ export function InstrumentalView({ onOpenTrack }: { onOpenTrack: (id: string) =>
   useEffect(() => { fetchTracks(); }, []);
 
   const fetchTracks = async () => {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       const res = await fetch(INSTRUMENTAL_SHEET);
       const csv = await res.text();
@@ -34,13 +32,7 @@ export function InstrumentalView({ onOpenTrack }: { onOpenTrack: (id: string) =>
         const values = line.split(",").map((v: string) => v.trim().replace(/^"|"$/g, ""));
         const obj: Record<string, string> = {};
         headers.forEach((h: string, i: number) => { obj[h] = values[i] || ""; });
-        return {
-          id: obj.id || "",
-          title: obj.title || "",
-          artist: obj.artist || "",
-          image: obj.image || "",
-          youtube: obj.youtube || "",
-        };
+        return { id: obj.id || "", title: obj.title || "", artist: obj.artist || "", image: obj.image || "", youtube: obj.youtube || "" };
       });
       setTracks(data.filter(t => t.title));
     } catch { setError("فشل جلب البيانات"); } finally { setLoading(false); }
@@ -58,7 +50,7 @@ export function InstrumentalView({ onOpenTrack }: { onOpenTrack: (id: string) =>
               <span className="w-5 shrink-0 text-center text-sm font-bold text-gold">{i + 1}</span>
               <img src={t.image || "/placeholder.svg"} alt={t.title} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
               <div className="min-w-0 flex-1"><p className="rx-clamp-1 text-sm font-bold text-foreground">{t.title}</p><p className="rx-clamp-1 text-xs text-muted-foreground">{t.artist}</p></div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gold"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-gold shrink-0"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
             </a>
           ))}
         </div>
