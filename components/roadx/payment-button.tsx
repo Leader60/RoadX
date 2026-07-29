@@ -45,14 +45,6 @@ export function PaymentButton({ onClick, className, children }: PaymentButtonPro
 
 export function AutoSubscriptionModal() {
   const [isOpen, setIsOpen] = useState(false);
-  
-  // إيقاف موسيقى البداية عند فتح النافذة
-  useEffect(() => {
-    if (isOpen) {
-      window.dispatchEvent(new CustomEvent("stop-startup-music"));
-    }
-  }, [isOpen]);
-
   const { toast } = useRoadX();
   const { makePayment } = usePurchase();
   const { checkStatus } = useSubscriptionStatus();
@@ -93,6 +85,7 @@ export function AutoSubscriptionModal() {
     return () => window.removeEventListener("open-subscription-modal", handleOpenModal);
   }, []);
 
+  // التحقق من اشتراك سابق فور توفر بيانات المستخدم (بعد المصادقة) — يبقى كطبقة احتياطية إضافية
   useEffect(() => {
     if (!user) return;
     checkStatus().then((status) => {
