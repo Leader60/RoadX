@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { RoadXApp } from "@/components/roadx/roadx-app";
 
 export default function HomePage() {
@@ -10,6 +11,7 @@ export default function HomePage() {
   const handleStart = () => {
     setHasStarted(true);
     
+    // تشغيل الموسيقى فور ضغط الزر
     if (audioRef.current) {
       audioRef.current.play().catch((err) => console.log("Audio play error:", err));
     }
@@ -20,6 +22,7 @@ export default function HomePage() {
 
     const audio = audioRef.current;
 
+    // إيقاف الموسيقى تلقائياً فور الوصول للثانية 15
     const handleTimeUpdate = () => {
       if (audio && audio.currentTime >= 15) {
         audio.pause();
@@ -40,7 +43,6 @@ export default function HomePage() {
   }, [hasStarted]);
 
   return (
-    // تركنا الحاوية بدون لون خلفية إجباري لكي تعود لـ off-white الطبيعي للموقع
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       {/* عنصر الصوت */}
       <audio ref={audioRef} src="/intro.mp3" preload="auto" />
@@ -52,7 +54,7 @@ export default function HomePage() {
           left: 0,
           width: '100vw',
           height: '100vh',
-          backgroundColor: '#fafafa', // لون أوف وايت ناعم للشاشة التمهيدية ليتناسب مع موقعك
+          backgroundColor: '#fafafa', // خلفية فاتحة متناسقة مع أوف وايت الموقع
           color: '#1e293b',
           display: 'flex',
           flexDirection: 'column',
@@ -61,8 +63,22 @@ export default function HomePage() {
           zIndex: 999999,
           padding: '20px'
         }}>
-          <h1 style={{ fontSize: '26px', marginBottom: '12px', fontWeight: 'bold' }}>مرحباً بك في RoadX</h1>
-          <p style={{ color: '#64748b', marginBottom: '24px' }}>اضغط على الزر لبدء الموسيقى والتطوير</p>
+          {/* عرض الشعار الأصلي */}
+          <div style={{ marginBottom: '20px' }}>
+            <Image 
+              src="/roadx-logo.png" 
+              alt="RoadX Logo" 
+              width={180} 
+              height={180} 
+              priority 
+              style={{ objectFit: 'contain' }}
+            />
+          </div>
+
+          <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '15px' }}>
+            اضغط على الزر لبدء التجربة والموسيقى
+          </p>
+          
           <button
             onClick={handleStart}
             style={{
@@ -74,14 +90,15 @@ export default function HomePage() {
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              transition: 'transform 0.2s ease'
             }}
           >
             دخول التطبيق 🎵
           </button>
         </div>
       ) : (
-        /* عرض التطبيق بأسلوبه ومساحته الأصلية تماماً */
+        /* عرض التطبيق بأسلوبه ومساحته الأصلية */
         <RoadXApp />
       )}
     </main>
