@@ -16,6 +16,7 @@ import { IconSparkle, IconChevronLeft, IconPlay } from "./icons";
 // صور الأغلفة
 const COVERS: Record<string, string> = {
   "arabic-gs": "/songs_images/Arabic_Artists.png",
+  "arabic-public": "/songs_images/Arabic_Public.png",
   "greek-gs": "/songs_images/Greek_Artists.png",
   "3155776842": "/songs_images/Top_50.png",
   "1109890291": "/songs_images/Pop_Songs.png",
