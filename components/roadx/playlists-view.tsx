@@ -13,6 +13,15 @@ import {
 import { SectionTitle } from "./ui";
 import { IconSparkle, IconChevronLeft, IconPlay } from "./icons";
 
+// صور الأغلفة
+const COVERS: Record<string, string> = {
+  "arabic-gs": "/songs_images/Arabic_Artists.png",
+  "greek-gs": "/songs_images/Greek_Artists.png",
+  "3155776842": "/songs_images/Top_50.png",
+  "1109890291": "/songs_images/Pop_Songs.png",
+  "1111141961": "/songs_images/Rock.png",
+};
+
 interface DeezerTrack {
   id: string;
   title: string;
@@ -56,7 +65,7 @@ export function PlaylistsView({ onOpenTrack }: { onOpenTrack: (id: string) => vo
 
       <button onClick={() => setOpenId("arabic-gs")} className="rx-press flex flex-col overflow-hidden rounded-2xl border border-gold/30 bg-card transition-colors hover:border-gold">
         <div className="relative h-40 w-full overflow-hidden">
-          <img src={imageUrl(ARABIC_PLAYLIST.query, 640, 360)} alt={ARABIC_PLAYLIST.title} className="h-full w-full object-cover" />
+          <img src={COVERS["arabic-gs"]} alt={ARABIC_PLAYLIST.title} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/90 to-transparent" />
           <div className="absolute bottom-3 right-3 left-3">
             <h3 className="text-xl font-bold text-foreground">{ARABIC_PLAYLIST.title}</h3>
@@ -67,7 +76,7 @@ export function PlaylistsView({ onOpenTrack }: { onOpenTrack: (id: string) => vo
 
       <button onClick={() => setOpenId("greek-gs")} className="rx-press flex flex-col overflow-hidden rounded-2xl border border-gold/30 bg-card transition-colors hover:border-gold">
         <div className="relative h-40 w-full overflow-hidden">
-          <img src={imageUrl(GREEK_PLAYLIST.query, 640, 360)} alt={GREEK_PLAYLIST.title} className="h-full w-full object-cover" />
+          <img src={COVERS["greek-gs"]} alt={GREEK_PLAYLIST.title} className="h-full w-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/90 to-transparent" />
           <div className="absolute bottom-3 right-3 left-3">
             <h3 className="text-xl font-bold text-foreground">{GREEK_PLAYLIST.title}</h3>
@@ -90,8 +99,7 @@ function PlaylistCard({ playlist, onOpen }: { playlist: Playlist; onOpen: () => 
   return (
     <button onClick={onOpen} className="rx-press flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-right transition-colors hover:border-gold/50">
       <div className="relative aspect-square w-full overflow-hidden">
-        <img src={`https://e-cdns-images.dzcdn.net/images/playlist/${playlist.id}/500x500-000000-80-0-0.jpg`} alt={playlist.title} className="h-full w-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = imageUrl(playlist.query, 320, 320); }} />
+        <img src={COVERS[playlist.id] || imageUrl(playlist.query, 320, 320)} alt={playlist.title} className="h-full w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/80 to-transparent" />
       </div>
       <div className="p-2.5">
@@ -137,7 +145,7 @@ function GoogleSheetDetail({ playlist, sheetUrl, onBack }: { playlist: Playlist;
   return (
     <div className="rx-fade-in flex flex-col gap-4 pb-6">
       <div className="relative">
-        <img src={imageUrl(playlist.query, 640, 360)} alt={playlist.title} className="h-48 w-full object-cover" />
+        <img src={COVERS[playlist.id] || imageUrl(playlist.query, 640, 360)} alt={playlist.title} className="h-48 w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-navy-deep/30" />
         <button onClick={onBack} className="rx-press absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-navy-deep/70 text-gold"><IconChevronLeft size={22} /></button>
         <div className="absolute bottom-3 right-4 left-4"><h1 className="text-2xl font-bold text-foreground">{playlist.title}</h1></div>
@@ -187,8 +195,7 @@ function PlaylistDetail({ playlist, onBack }: { playlist: Playlist; onBack: () =
   return (
     <div className="rx-fade-in flex flex-col gap-4 pb-6">
       <div className="relative">
-        <img src={`https://e-cdns-images.dzcdn.net/images/playlist/${playlist.id}/1000x500-000000-80-0-0.jpg`} alt={playlist.title} className="h-48 w-full object-cover"
-          onError={(e) => { (e.target as HTMLImageElement).src = imageUrl(playlist.query, 640, 360); }} />
+        <img src={COVERS[playlist.id] || imageUrl(playlist.query, 640, 360)} alt={playlist.title} className="h-48 w-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-navy-deep/30" />
         <button onClick={onBack} className="rx-press absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-navy-deep/70 text-gold"><IconChevronLeft size={22} /></button>
         <div className="absolute bottom-3 right-4 left-4"><h1 className="text-2xl font-bold text-foreground">{playlist.title}</h1></div>
