@@ -11,7 +11,6 @@ const CONTACTS = [
   { label: "أوقات الرد", value: "يومياً من ٩ صباحاً حتى ٦ مساءً" },
 ];
 
-// تحقق بسيط من صيغة البريد الإلكتروني
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
@@ -21,8 +20,9 @@ export function ContactView() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const n = cleanStr(name, 80).trim();
     const e = cleanStr(email, 120).trim();
     const m = cleanStr(message, 800).trim();
@@ -37,10 +37,27 @@ export function ContactView() {
       return;
     }
 
-    setName("");
-    setEmail("");
-    setMessage("");
-    pushToast("تم إرسال رسالتك، شكراً لتواصلك", "success");
+    setSending(true);
+    try {
+      const res = await fetch("https://formspree.io/f/mzdabogg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: n, email: e, message: m }),
+      });
+
+      if (res.ok) {
+        setName("");
+        setEmail("");
+        setMessage("");
+        pushToast("تم إرسال رسالتك، شكراً لتواصلك", "success");
+      } else {
+        pushToast("فشل الإرسال، حاول مجدداً", "error");
+      }
+    } catch {
+      pushToast("فشل الاتصال، تحقق من الإنترنت", "error");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -63,7 +80,7 @@ export function ContactView() {
         ))}
       </Card>
       <Card className="flex flex-col gap-3 p-4">
-        <SectionTitle className="mb-1">تواصل معنا</SectionTitle>
+        <SectionTitle className="mb-1">أرسل رسالة</SectionTitle>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -85,8 +102,12 @@ export function ContactView() {
           placeholder="رسالتك..."
           className={cx(inputClass, "resize-none")}
         />
-        <Button variant="gold" onClick={submit} className="mt-1">
-          <IconSend size={18} /> إرسال
+        <Button variant="gold" onClick={submit} disabled={sending} className="mt-1">
+          {sending ? (
+            <>جاري الإرسال...</>
+          ) : (
+            <><IconSend size={18} /> إرسال</>
+          )}
         </Button>
       </Card>
       <div className="flex items-center justify-center gap-2 pt-2 text-xs text-muted-foreground">
