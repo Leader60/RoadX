@@ -178,7 +178,7 @@ setInterval(refreshTracks, 60000);
 // قوائم التشغيل الحصرية
 // ========================
 
-// قائمة العربي - من Google Sheets
+// قائمة العربي - Google Sheets
 export const ARABIC_PLAYLIST_SHEET =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vSD5nZvil8NuqPcNsGomcheKuVrJYi1Zp3C928dLQ28lp6sa5dLXD6PRxXJUV7tBeQD95TtXM8Bc95e/pub?gid=0&single=true&output=csv";
 
@@ -191,7 +191,20 @@ export const ARABIC_PLAYLIST: Playlist = {
   premium: false,
 };
 
-// القوائم العالمية - من Deezer
+// قائمة اليونانية - Google Sheets
+export const GREEK_PLAYLIST_SHEET =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSvDwXiV6syjtE5ackB24FiXJMJkxf0KfaG0wXWZFh_mWyCCJF-ua5yx5uFJ0uXdD3TgQQe2J4a-DUF/pub?gid=0&single=true&output=csv";
+
+export const GREEK_PLAYLIST: Playlist = {
+  id: "greek-gs",
+  title: "اليونانية",
+  query: "greek music mediterranean album art",
+  description: "أجمل الأغاني اليونانية - منتقاة يدوياً",
+  trackIds: [],
+  premium: false,
+};
+
+// القوائم العالمية - Deezer
 export const PLAYLISTS: Playlist[] = [
   {
     id: "3155776842",
@@ -214,14 +227,6 @@ export const PLAYLISTS: Playlist[] = [
     title: "الروك",
     query: "rock music guitar dark album cover",
     description: "أقوى أغاني الروك",
-    trackIds: [],
-    premium: false,
-  },
-  {
-    id: "1380905945",
-    title: "اليونانية",
-    query: "greek music bouzouki mediterranean album",
-    description: "أجمل الأغاني اليونانية",
     trackIds: [],
     premium: false,
   },
