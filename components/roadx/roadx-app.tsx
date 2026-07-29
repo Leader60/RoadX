@@ -14,7 +14,7 @@ import { ContactView } from "./contact-view";
 import { ToastHost, StorageNotice, LoadingScreen } from "./feedback";
 
 function AppInner() {
-  const { ready, prefs, setLastTrack, toast } = useRoadX();
+  const { ready, prefs, setLastTrack, pushToast } = useRoadX();
   const [tab, setTab] = useState<TabId>("home");
   const [trackId, setTrackId] = useState<string>(prefs.lastTrackId);
 
@@ -23,11 +23,12 @@ function AppInner() {
   }, [ready, prefs.lastTrackId]);
 
   const checkAccess = (targetTab: TabId): boolean => {
+    if (!ready) return false;
     const userChoice = sessionStorage.getItem("roadx_user_choice");
     const restrictedTabs: TabId[] = ["music", "songs", "playlists"];
     if (userChoice === "premium_active") return true;
     if (restrictedTabs.includes(targetTab)) {
-      if (toast) toast("عذراً! هذه القائمة مخصصة للمشتركين فقط. يرجى الاشتراك للوصول إليها.");
+      pushToast("عذراً! هذه القائمة مخصصة للمشتركين فقط. يرجى الاشتراك للوصول إليها.", "error");
       return false;
     }
     return true;
