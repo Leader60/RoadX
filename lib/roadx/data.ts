@@ -175,8 +175,23 @@ refreshTracks();
 setInterval(refreshTracks, 60000);
 
 // ========================
-// قوائم التشغيل الحصرية - Deezer
+// قوائم التشغيل الحصرية
 // ========================
+
+// قائمة العربي - من Google Sheets
+export const ARABIC_PLAYLIST_SHEET =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSD5nZvil8NuqPcNsGomcheKuVrJYi1Zp3C928dLQ28lp6sa5dLXD6PRxXJUV7tBeQD95TtXM8Bc95e/pub?gid=0&single=true&output=csv";
+
+export const ARABIC_PLAYLIST: Playlist = {
+  id: "arabic-gs",
+  title: "أفضل العربي",
+  query: "arabic music oriental album art",
+  description: "أجمل الأغاني العربية - منتقاة يدوياً",
+  trackIds: [],
+  premium: false,
+};
+
+// القوائم العالمية - من Deezer
 export const PLAYLISTS: Playlist[] = [
   {
     id: "3155776842",
@@ -203,10 +218,10 @@ export const PLAYLISTS: Playlist[] = [
     premium: false,
   },
   {
-    id: "1313621735",
-    title: "أفضل العربي",
-    query: "arabic music oriental album art",
-    description: "أجمل الأغاني العربية",
+    id: "1380905945",
+    title: "اليونانية",
+    query: "greek music bouzouki mediterranean album",
+    description: "أجمل الأغاني اليونانية",
     trackIds: [],
     premium: false,
   },
