@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import Image from 'next/image';
 import { RoadXApp } from "@/components/roadx/roadx-app";
 
-export default function HomePage() {
+// 1. مكون الشاشة التمهيدية معزول تماماً لعدم إحداث Re-render لتطبيق RoadXApp الأصلي
+const IntroOverlay = memo(function IntroOverlay() {
   const [hasStarted, setHasStarted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -39,93 +40,99 @@ export default function HomePage() {
     };
   }, [hasStarted]);
 
+  // إذا تم الضغط، نختفي تماماً وتتوقف التفاعلات
+  if (hasStarted) {
+    return <audio ref={audioRef} src="/intro.mp3" preload="auto" />;
+  }
+
   return (
-    <>
-      {/* مشغل الصوت للمقدمة */}
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        backgroundColor: '#fafafa',
+        color: '#1e293b',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999999,
+        padding: '20px'
+      }}
+    >
       <audio ref={audioRef} src="/intro.mp3" preload="auto" />
 
-      {/* الشاشة التمهيدية (Overlay) */}
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: '#fafafa',
-          color: '#1e293b',
-          display: hasStarted ? 'none' : 'flex',
-          flexDirection: 'column',
+      {/* إطار خارجي 4px بلون ذهبي ملكي */}
+      <div style={{
+        padding: '6px',
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)',
+        marginBottom: '20px',
+        boxShadow: '0 8px 24px rgba(179, 135, 40, 0.25)'
+      }}>
+        {/* الدائرة الكحلية الداخلية */}
+        <div style={{
+          width: '160px',
+          height: '160px',
+          borderRadius: '50%',
+          backgroundColor: '#0f172a',
+          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 999999,
-          padding: '20px',
-          pointerEvents: hasStarted ? 'none' : 'auto'
-        }}
-      >
-        {/* إطار خارجي 4px بلون ذهبي ملكي */}
-        <div style={{
-          padding: '6px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)',
-          marginBottom: '20px',
-          boxShadow: '0 8px 24px rgba(179, 135, 40, 0.25)'
+          padding: '20px'
         }}>
-          {/* الدائرة الكحلية الداخلية */}
-          <div style={{
-            width: '160px',
-            height: '160px',
-            borderRadius: '50%',
-            backgroundColor: '#0f172a',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px'
-          }}>
-            <Image 
-              src="/roadx-logo.png" 
-              alt="RoadX Logo" 
-              width={120} 
-              height={120} 
-              priority 
-              style={{ 
-                objectFit: 'contain',
-                // هالة خفيفة ناعمة حول تفاصيل الشعار لإبرازها على الخلفية الداكنة
-                filter: 'drop-shadow(0px 0px 10px rgba(255, 215, 0, 0.45)) drop-shadow(0px 0px 4px rgba(255, 255, 255, 0.3))'
-              }}
-            />
-          </div>
+          <Image 
+            src="/roadx-logo.png" 
+            alt="RoadX Logo" 
+            width={120} 
+            height={120} 
+            priority 
+            style={{ 
+              objectFit: 'contain',
+              filter: 'drop-shadow(0px 0px 10px rgba(255, 215, 0, 0.45)) drop-shadow(0px 0px 4px rgba(255, 255, 255, 0.3))'
+            }}
+          />
         </div>
-
-        {/* النص الترحيبي */}
-        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
-          مرحباً بكم 👋
-        </h2>
-        
-        <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '15px', textAlign: 'center' }}>
-          للاستستمتاع بتجربة موسيقية رائعة اضغط زر البدء
-        </p>
-        
-        <button
-          onClick={handleStart}
-          style={{
-            padding: '12px 32px',
-            fontSize: '16px',
-            fontWeight: '600',
-            backgroundColor: '#0f172a',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }}
-        >
-          دخول التطبيق 🎵
-        </button>
       </div>
 
-      {/* التطبيق الرئيسي */}
+      {/* النص الترحيبي */}
+      <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
+        مرحباً بكم 👋
+      </h2>
+      
+      <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '15px', textAlign: 'center' }}>
+        للاستستمتاع بتجربة موسيقية رائعة اضغط زر البدء
+      </p>
+      
+      <button
+        onClick={handleStart}
+        style={{
+          padding: '12px 32px',
+          fontSize: '16px',
+          fontWeight: '600',
+          backgroundColor: '#0f172a',
+          color: '#ffffff',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}
+      >
+        دخول التطبيق 🎵
+      </button>
+    </div>
+  );
+});
+
+// 2. الصفحة الرئيسية المستقرة: تعرض التطبيق والمقدمة بشكل منفصل كلياً
+export default function HomePage() {
+  return (
+    <main>
       <RoadXApp />
-    </>
+      <IntroOverlay />
+    </main>
   );
 }
