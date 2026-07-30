@@ -10,8 +10,6 @@ export default function HomePage() {
 
   const handleStart = () => {
     setHasStarted(true);
-    
-    // تشغيل الموسيقى فور ضغط الزر
     if (audioRef.current) {
       audioRef.current.play().catch((err) => console.log("Audio play error:", err));
     }
@@ -22,7 +20,6 @@ export default function HomePage() {
 
     const audio = audioRef.current;
 
-    // إيقاف الموسيقى تلقائياً فور الوصول للثانية 15
     const handleTimeUpdate = () => {
       if (audio && audio.currentTime >= 15) {
         audio.pause();
@@ -43,64 +40,88 @@ export default function HomePage() {
   }, [hasStarted]);
 
   return (
-    <main style={{ minHeight: '100vh', position: 'relative' }}>
-      {/* عنصر الصوت */}
+    <>
+      {/* مشغل الصوت للمقدمة */}
       <audio ref={audioRef} src="/intro.mp3" preload="auto" />
 
-      {!hasStarted ? (
-        <div style={{
+      {/* الشاشة التمهيدية (Overlay) */}
+      <div 
+        style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100vw',
           height: '100vh',
-          backgroundColor: '#fafafa', // خلفية فاتحة متناسقة مع أوف وايت الموقع
+          backgroundColor: '#fafafa',
           color: '#1e293b',
-          display: 'flex',
+          display: hasStarted ? 'none' : 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 999999,
-          padding: '20px'
+          padding: '20px',
+          pointerEvents: hasStarted ? 'none' : 'auto'
+        }}
+      >
+        {/* إطار خارجي 4px بلون ذهبي ملكي براق محيط بالدائرة الكحلية */}
+        <div style={{
+          padding: '4px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)',
+          marginBottom: '20px',
+          boxShadow: '0 8px 24px rgba(179, 135, 40, 0.25)'
         }}>
-          {/* عرض الشعار الأصلي */}
-          <div style={{ marginBottom: '20px' }}>
+          {/* الدائرة الكحلية الداخلية */}
+          <div style={{
+            width: '160px',
+            height: '160px',
+            borderRadius: '50%',
+            backgroundColor: '#0f172a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}>
             <Image 
               src="/roadx-logo.png" 
               alt="RoadX Logo" 
-              width={180} 
-              height={180} 
+              width={120} 
+              height={120} 
               priority 
               style={{ objectFit: 'contain' }}
             />
           </div>
-
-          <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '15px' }}>
-            مرحباً... أضغط للاستمتاع بالموسيقى
-          </p>
-          
-          <button
-            onClick={handleStart}
-            style={{
-              padding: '12px 32px',
-              fontSize: '16px',
-              fontWeight: '600',
-              backgroundColor: '#0f172a',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              transition: 'transform 0.2s ease'
-            }}
-          >
-            دخول التطبيق 🎵
-          </button>
         </div>
-      ) : (
-        /* عرض التطبيق بأسلوبه ومساحته الأصلية */
-        <RoadXApp />
-      )}
-    </main>
+
+        {/* النص الترحيبي المحدث */}
+        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
+          مرحباً بكم 👋
+        </h2>
+        
+        <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '15px', textAlign: 'center' }}>
+          للاستستمتاع بتجربة موسيقية رائعة اضغط زر البدء
+        </p>
+        
+        <button
+          onClick={handleStart}
+          style={{
+            padding: '12px 32px',
+            fontSize: '16px',
+            fontWeight: '600',
+            backgroundColor: '#0f172a',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}
+        >
+          دخول التطبيق 🎵
+        </button>
+      </div>
+
+      {/* التطبيق الرئيسي مثبت ويعمل بشكل مستمر */}
+      <RoadXApp />
+    </>
   );
 }
