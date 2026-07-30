@@ -63,9 +63,9 @@ export default function HomePage() {
           pointerEvents: hasStarted ? 'none' : 'auto'
         }}
       >
-        {/* إطار خارجي 4px بلون ذهبي ملكي براق محيط بالدائرة الكحلية */}
+        {/* إطار خارجي 4px بلون ذهبي ملكي */}
         <div style={{
-          padding: '4px',
+          padding: '6px',
           borderRadius: '50%',
           background: 'linear-gradient(135deg, #BF953F 0%, #FCF6BA 25%, #B38728 50%, #FBF5B7 75%, #AA771C 100%)',
           marginBottom: '20px',
@@ -88,12 +88,16 @@ export default function HomePage() {
               width={120} 
               height={120} 
               priority 
-              style={{ objectFit: 'contain' }}
+              style={{ 
+                objectFit: 'contain',
+                // هالة خفيفة ناعمة حول تفاصيل الشعار لإبرازها على الخلفية الداكنة
+                filter: 'drop-shadow(0px 0px 10px rgba(255, 215, 0, 0.45)) drop-shadow(0px 0px 4px rgba(255, 255, 255, 0.3))'
+              }}
             />
           </div>
         </div>
 
-        {/* النص الترحيبي المحدث */}
+        {/* النص الترحيبي */}
         <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#0f172a', marginBottom: '8px' }}>
           مرحباً بكم 👋
         </h2>
@@ -120,7 +124,7 @@ export default function HomePage() {
         </button>
       </div>
 
-      {/* التطبيق الرئيسي مثبت ويعمل بشكل مستمر */}
+      {/* التطبيق الرئيسي */}
       <RoadXApp />
     </>
   );
