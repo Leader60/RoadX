@@ -8,9 +8,15 @@ interface AudioPlayerProps {
 
 export default function AudioPlayer({ onEnded15Sec }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // حفظ مرجع الدالة لمنع إعادات التشغيل الناتجة عن Re-render الأب
+  const onEndedRef = useRef(onEnded15Sec);
+  useEffect(() => {
+    onEndedRef.current = onEnded15Sec;
+  }, [onEnded15Sec]);
 
   useEffect(() => {
-    // 1. استدعاء الملف الصوتي الجديد intro.mp3 من مجلد public
+    // 1. استدعاء الصوت مرة واحدة فقط
     const audio = new Audio('/intro.mp3');
     audioRef.current = audio;
 
@@ -24,18 +30,18 @@ export default function AudioPlayer({ onEnded15Sec }: AudioPlayerProps) {
 
     playAudio();
 
-    // 2. ضبط المؤقت الزمني المستقل (15 ثانية)
+    // 2. ضبط مؤقت الـ 15 ثانية
     const timer = setTimeout(() => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
-      if (onEnded15Sec) {
-        onEnded15Sec();
+      if (onEndedRef.current) {
+        onEndedRef.current();
       }
     }, 15000);
 
-    // 3. التنظيف عند إغلاق/تغيير الصفحة
+    // 3. التنظيف فقط عند التفكيك النهائى للمكون
     return () => {
       clearTimeout(timer);
       if (audioRef.current) {
@@ -43,7 +49,7 @@ export default function AudioPlayer({ onEnded15Sec }: AudioPlayerProps) {
         audioRef.current = null;
       }
     };
-  }, [onEnded15Sec]);
+  }, []); // مصفوفة فارغة لضمان عدم إعادة التنفيذ نهائياً عند التنقل بين الصفحات
 
-  return null; // مكون يعمل في الخلفية فقط
+  return null;
 }
