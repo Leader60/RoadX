@@ -66,7 +66,7 @@ export function ContactView() {
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-gold/50 bg-navy-deep text-gold">
           <IconMail size={26} />
         </span>
-        <h1 className="text-2xl font-bold text-foreground">تواصل معنا</h1>
+        <h1 className="text-2xl font-bold text-gold">تواصل معنا</h1>
         <p className="max-w-sm text-sm text-muted-foreground text-pretty">
           يسعدنا سماع رأيك واقتراحاتك حول أحدث الإصدارات الموسيقية.
         </p>
