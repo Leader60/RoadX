@@ -13,7 +13,6 @@ import { AboutView } from "./about-view";
 import { ContactView } from "./contact-view";
 import { ToastHost, StorageNotice, LoadingScreen } from "./feedback";
 
-// إضافة track_details كحالة تبويب ممكنة لتفاصيل الأغنية
 type ExtendedTabId = TabId | "track_details";
 
 function AppInner() {
@@ -41,24 +40,23 @@ function AppInner() {
     if (!checkAccess("music")) return;
     setTrackId(id);
     setLastTrack(id);
-    setTab("track_details"); // عند النقر على الأغنية يفتح شاشة التفاصيل
+    setTab("track_details"); // يفتح تفاصيل الأغنية عند الضغط عليها
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
   const navigate = (t: TabId) => {
     if (!checkAccess(t)) { setTab("home"); return; }
-    setTab(t); // عند النقر على زر "مقطوعات موسيقية" (music) يفتح القائمة العامة
+    setTab(t); // يفتح القائمة العامة عند الضغط على زر التبويب
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   };
 
   if (!ready) return <LoadingScreen />;
 
-  // لإبقاء زر "مقطوعات موسيقية" نشطاً في الشاشات العلوية والسفلية حتى عند عرض تفاصيل الأغنية
-  const activeTabForNav = (tab === "track_details" ? "music" : tab) as TabId;
+  const activeNavTab = (tab === "track_details" ? "music" : tab) as TabId;
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-background border-x-[5px] border-gold shadow-2xl">
-      <AppHeader tab={activeTabForNav} onNavigate={navigate} />
+      <AppHeader tab={activeNavTab} onNavigate={navigate} />
       <main className="flex-1 pb-20">
         {tab === "home" && <HomeView onOpenTrack={openTrack} />}
         {tab === "track_details" && <MusicView trackId={trackId} onOpenTrack={openTrack} />}
@@ -68,7 +66,7 @@ function AppInner() {
         {tab === "about" && <AboutView />}
         {tab === "contact" && <ContactView />}
       </main>
-      <BottomNav tab={activeTabForNav} onNavigate={navigate} />
+      <BottomNav tab={activeNavTab} onNavigate={navigate} />
       <StorageNotice />
       <ToastHost />
       <AutoSubscriptionModal />
