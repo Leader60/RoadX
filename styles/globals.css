@@ -75,7 +75,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  /* التعديل هنا: ربط خط أميري + خطوط الإيموجي للأنظمة تلقائياً */
+  --font-sans: var(--font-amiri), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
   --font-mono: var(--font-geist-mono);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
