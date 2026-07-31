@@ -136,7 +136,7 @@ function FeaturedCard({
             <IconComment size={16} className="text-gold" /> {formatCount(comments)}
           </span>
           <Button variant="gold" className="ms-auto px-4 py-2" onClick={onOpen}>
-            مقطوعات موسيقية
+            إصدار مميّز
           </Button>
         </div>
       </div>
