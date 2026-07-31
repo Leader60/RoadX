@@ -34,6 +34,9 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={`bg-background ${amiri.variable} ${GeistMono.variable}`}>
       <head>
+        {/* إضافة ترميز UTF-8 صراحة لدعم الإيموجي والرموز الخاصة */}
+        <meta charSet="utf-8" />
+        
         {/* استدعاء Pi SDK رسمياً لتهيئة اتصال المتصفح والمحفظة */}
         <Script 
           src="https://sdk.minepi.com/pi-sdk.js" 
