@@ -55,7 +55,7 @@ function AppInner() {
       <AppHeader tab={tab} onNavigate={navigate} />
       <main className="flex-1 pb-20">
         {tab === "home" && <HomeView onOpenTrack={openTrack} />}
-        {tab === "music" && <InstrumentalView onOpenTrack={openTrack} />}
+        {tab === "music" && <MusicView trackId={trackId} onOpenTrack={openTrack} />}
         {tab === "songs" && <SongsView onOpenTrack={openTrack} />}
         {tab === "playlists" && <PlaylistsView onOpenTrack={openTrack} />}
         {tab === "about" && <AboutView />}
