@@ -9,6 +9,8 @@ import {
   GREEK_PLAYLIST_SHEET,
   DABKE_PLAYLIST,
   DABKE_PLAYLIST_SHEET,
+  COKTAIL_PLAYLIST,
+  COKTAIL_PLAYLIST_SHEET,
   imageUrl,
   type Playlist,
 } from "@/lib/roadx/data";
@@ -55,6 +57,10 @@ export function PlaylistsView({ onOpenTrack }: { onOpenTrack: (id: string) => vo
 
   if (openId === "greek-gs") {
     return <GoogleSheetDetail playlist={GREEK_PLAYLIST} sheetUrl={GREEK_PLAYLIST_SHEET} onBack={() => setOpenId(null)} />;
+  }
+
+  if (openId === "coktail-gs") {
+    return <GoogleSheetDetail playlist={COKTAIL_PLAYLIST} sheetUrl={COKTAIL_PLAYLIST_SHEET} onBack={() => setOpenId(null)} />;
   }
 
   const active = openId ? PLAYLISTS.find((p) => p.id === openId) ?? null : null;
@@ -105,11 +111,27 @@ export function PlaylistsView({ onOpenTrack }: { onOpenTrack: (id: string) => vo
 
       <p className="text-sm text-muted-foreground">قوائم عالمية</p>
       <div className="grid grid-cols-2 gap-3">
+        <CoktailCard onOpen={() => setOpenId("coktail-gs")} />
         {PLAYLISTS.map((p) => (
           <PlaylistCard key={p.id} playlist={p} onOpen={() => setOpenId(p.id)} />
         ))}
       </div>
     </div>
+  );
+}
+
+function CoktailCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button onClick={onOpen} className="rx-press flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-right transition-colors hover:border-gold/50">
+      <div className="relative aspect-square w-full overflow-hidden">
+        <img src={COVERS["coktail-gs"]} alt={COKTAIL_PLAYLIST.title} className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/80 to-transparent" />
+      </div>
+      <div className="p-2.5">
+        <p className="rx-clamp-1 text-sm font-bold text-foreground">{COKTAIL_PLAYLIST.title}</p>
+        <p className="rx-clamp-2 mt-0.5 text-xs text-muted-foreground">{COKTAIL_PLAYLIST.description}</p>
+      </div>
+    </button>
   );
 }
 
