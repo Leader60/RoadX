@@ -22,7 +22,6 @@ export function HomeView({ onOpenTrack }: { onOpenTrack: (id: string) => void })
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // انتظار تحميل البيانات
     const check = setInterval(() => {
       const ft = featuredTrack();
       if (ft && ft.id !== "temp") {
@@ -50,7 +49,7 @@ export function HomeView({ onOpenTrack }: { onOpenTrack: (id: string) => void })
     <div className="rx-fade-in flex flex-col gap-6 pb-6">
       {/* Title band */}
       <div className="px-4 pt-5 text-center">
-        <h1 className="text-3xl font-bold rx-gold-text tracking-wide text-balance">
+        <h1 className="text-2xl font-bold rx-gold-text tracking-wide text-balance">
           أحدث الإصدارات الموسيقية العالمية
         </h1>
         <p className="mt-1 text-sm text-muted-foreground text-pretty">
@@ -136,7 +135,7 @@ function FeaturedCard({
             <IconComment size={16} className="text-gold" /> {formatCount(comments)}
           </span>
           <Button variant="gold" className="ms-auto px-4 py-2" onClick={onOpen}>
-           👍💖 إصدار مميّز
+            الصفحة الكاملة
           </Button>
         </div>
       </div>
