@@ -202,6 +202,14 @@ export const GREEK_PLAYLIST: Playlist = {
   description: "أجمل الأغاني اليونانية - منتقاة يدوياً", trackIds: [], premium: false,
 };
 
+export const COKTAIL_PLAYLIST_SHEET =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXH6Ibkbxh5T0jaylBhFRjEiEqKMdp-2Q7pokK5O3DjpifCPSCNejsTOP7DFXxLhJGsR2UhowJeyaJ/pub?gid=0&single=true&output=csv";
+
+export const COKTAIL_PLAYLIST: Playlist = {
+  id: "coktail-gs", title: "COKTAIL", query: "coktail mixed music playlist album art",
+  description: "مزيج منوع من أجمل الأغاني", trackIds: [], premium: false,
+};
+
 export const INSTRUMENTAL_SHEET =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vQTxLRQpkuiJlFxmEJb1957tfwqxVOElzhg4nb_jJB7nC_7b8e1371w7DywQZNGz-P6Eej8sUZDhB2b/pub?gid=0&single=true&output=csv";
 
