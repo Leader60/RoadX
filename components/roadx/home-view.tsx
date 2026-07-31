@@ -15,12 +15,7 @@ import { StreamingLinks, FeatureBox } from "./track-card";
 import { SectionTitle, Button } from "./ui";
 import { IconHeart, IconComment, IconPlay, IconSparkle } from "./icons";
 
-interface HomeViewProps {
-  onOpenTrack: (id: string) => void;
-  onNavigateToMusic?: () => void; // دالة مخصصة لفتح صفحة المقطوعات الموسيقية
-}
-
-export function HomeView({ onOpenTrack, onNavigateToMusic }: HomeViewProps) {
+export function HomeView({ onOpenTrack }: { onOpenTrack: (id: string) => void }) {
   const { likeCount, commentCount } = useRoadX();
   const [featured, setFeatured] = useState<Track | null>(null);
   const [boxes, setBoxes] = useState<Track[]>([]);
@@ -76,8 +71,7 @@ export function HomeView({ onOpenTrack, onNavigateToMusic }: HomeViewProps) {
           track={featured}
           likes={likeCount(featured)}
           comments={commentCount(featured)}
-          onOpenDetail={() => onOpenTrack(featured.id)} // الزر الأصفر يفتح تفاصيل الأغنية
-          onOpenMusic={onNavigateToMusic}               // الزر الذهبي السفلي يفتح المقطوعات الموسيقية
+          onOpen={() => onOpenTrack(featured.id)}
         />
       </section>
 
@@ -98,14 +92,12 @@ function FeaturedCard({
   track,
   likes,
   comments,
-  onOpenDetail,
-  onOpenMusic,
+  onOpen,
 }: {
   track: Track;
   likes: number;
   comments: number;
-  onOpenDetail: () => void;
-  onOpenMusic?: () => void;
+  onOpen: () => void;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-gold/30 bg-card">
@@ -116,11 +108,9 @@ function FeaturedCard({
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/90 via-navy-deep/20 to-transparent" />
-        
-        {/* الزر الأصفر (السهم داخل الدائرة): يفتح تفاصيل الأغنية مباشرة */}
         <button
-          onClick={onOpenDetail}
-          aria-label="تشغيل الأغنية وفتح التفاصيل"
+          onClick={onOpen}
+          aria-label="افتح المقطوعة"
           className="rx-press absolute bottom-3 right-3 flex h-12 w-12 items-center justify-center rounded-full bg-gold text-gold-foreground shadow-lg"
         >
           <IconPlay size={22} />
@@ -129,7 +119,6 @@ function FeaturedCard({
           <p className="text-xs text-gold">{formatDate(track.releaseDate)}</p>
         </div>
       </div>
-
       <div className="flex flex-col gap-3 p-4">
         <div>
           <h3 className="text-xl font-bold text-foreground">{track.title}</h3>
@@ -146,13 +135,7 @@ function FeaturedCard({
           <span className="inline-flex items-center gap-1.5">
             <IconComment size={16} className="text-gold" /> {formatCount(comments)}
           </span>
-          
-          {/* زر "مقطوعات موسيقية" الذهبي: يفتح صفحة المقطوعات الموسيقية كما تريد */}
-          <Button 
-            variant="gold" 
-            className="ms-auto px-4 py-2" 
-            onClick={onOpenMusic}
-          >
+          <Button variant="gold" className="ms-auto px-4 py-2" onClick={onOpen}>
             مقطوعات موسيقية
           </Button>
         </div>
