@@ -8,6 +8,14 @@ export default function HomePage() {
   const [hasStarted, setHasStarted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    const returningFromStream = sessionStorage.getItem("roadx_returning_from_stream");
+    if (returningFromStream === "1") {
+      sessionStorage.removeItem("roadx_returning_from_stream");
+      setHasStarted(true);
+    }
+  }, []);
+
   const handleStart = (e: React.MouseEvent) => {
     // إيقاف تسرب الحدث لضمان عدم تنشيط أي روابط أو نماذج بالخلفية (Feedback / Routing)
     e.stopPropagation();
