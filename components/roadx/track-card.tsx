@@ -1,10 +1,9 @@
 import type { Track } from "@/lib/roadx/data";
-import { formatCount, trackImage } from "@/lib/roadx/data"; // أزلنا imageUrl غير المستخدم
+import { formatCount, trackImage } from "@/lib/roadx/data";
 import { useRoadX } from "@/contexts/roadx-context";
 import { cx } from "./ui";
 import { IconHeart, IconComment, IconYoutube, IconSpotify, IconApple } from "./icons";
 
-// أيقونة Deezer بسيطة (دائرة بحرف D) — لا حاجة لملف أيقونات خارجي
 function IconDeezer({ size = 18 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -33,14 +32,20 @@ export function StreamingLinks({
   ];
   const available = links.filter((l) => l.href);
   if (available.length === 0) return null;
+
+  const handleStreamClick = () => {
+    sessionStorage.setItem("roadx_returning_from_stream", "1");
+  };
+
   return (
     <div className={cx("flex flex-wrap items-center gap-2", className)}>
       {available.map(({ key, href, label, Icon }) => (
-        <a // ← أضفنا <a المفقودة
+        
           key={key}
           href={href}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={handleStreamClick}
           className="rx-press inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-navy-deep/40 px-3 py-1.5 text-xs font-bold text-gold hover:bg-gold hover:text-gold-foreground transition-colors"
         >
           <Icon size={size} />
@@ -51,7 +56,6 @@ export function StreamingLinks({
   );
 }
 
-// Compact row used in Songs page.
 export function TrackRow({ track, onOpen }: { track: Track; onOpen: () => void }) {
   const { likeCount, commentCount } = useRoadX();
   return (
@@ -80,7 +84,6 @@ export function TrackRow({ track, onOpen }: { track: Track; onOpen: () => void }
   );
 }
 
-// Featured box used on the homepage.
 export function FeatureBox({ track, onOpen }: { track: Track; onOpen: () => void }) {
   return (
     <button
