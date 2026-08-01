@@ -1,3 +1,5 @@
+import { IconHome } from "@/components/roadx/icons";
+
 export const metadata = {
   title: "سياسة الخصوصية وشروط الاستخدام | RoadX",
 };
@@ -6,6 +8,18 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 py-16">
+
+        {/* زر العودة للرئيسية */}
+        <div className="mb-6 flex justify-end">
+          
+            href="/"
+            className="rx-press inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-bold text-gold transition-colors hover:bg-gold hover:text-gold-foreground"
+          >
+            <IconHome size={18} />
+            <span>العودة للرئيسية</span>
+          </a>
+        </div>
+
         {/* عنوان الصفحة */}
         <h1 className="text-3xl font-bold text-gold mb-8 text-right">
           سياسة الخصوصية وشروط الاستخدام
