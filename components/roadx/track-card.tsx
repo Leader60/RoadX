@@ -40,7 +40,7 @@ export function StreamingLinks({
   return (
     <div className={cx("flex flex-wrap items-center gap-2", className)}>
       {available.map(({ key, href, label, Icon }) => (
-        
+   <a     
           key={key}
           href={href}
           target="_blank"
