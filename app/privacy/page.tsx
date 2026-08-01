@@ -11,7 +11,7 @@ export default function PrivacyPage() {
 
         {/* زر العودة للرئيسية */}
         <div className="mb-6 flex justify-end">
-          
+          <a
             href="/"
             className="rx-press inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-4 py-2 text-sm font-bold text-gold transition-colors hover:bg-gold hover:text-gold-foreground"
           >
