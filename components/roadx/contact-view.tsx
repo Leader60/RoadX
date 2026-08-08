@@ -79,6 +79,11 @@ export function ContactView() {
           </div>
         ))}
       </Card>
+      <Card className="p-4">
+        <a href="https://wa.me/96560986551" target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 py-3 font-bold text-white transition hover:opacity-90">
+          واتساب
+        </a>
+      </Card>
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="mb-1">أرسل رسالة</SectionTitle>
         <input
