@@ -229,7 +229,7 @@ export function trackImage(track: Track, w = 600, h = 600): string {
 
 export function sortedByDate(): Track[] { return [...TRACKS].sort((a, b) => b.releaseDate.localeCompare(a.releaseDate)); }
 export function featuredTrack(): Track { return sortedByDate()[0]; }
-export function featuredBoxes(): Track[] { return sortedByDate().slice(1, 4); }
+export function featuredBoxes(): Track[] { return sortedByDate().slice(1, 5); }
 export function uid(prefix = "id"): string { return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`; }
 
 export function clampNum(v: unknown, min: number, max: number, fallback = 0): number {
